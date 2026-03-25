@@ -119,8 +119,8 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 				Data: []SessionSummary{
 					{
 						Object:        "session",
-						ID:            "sid_example_two",
-						LatestEventID: "evt_example_two",
+						ID:            "sid_123456789abcdefghjkmnpqrst",
+						LatestEventID: "evt_3456789abcdefghjkmnpqrstvw",
 						LatestResult:  sessionList.Data[0].LatestResult,
 						LastScoredAt:  "2026-03-24T20:01:05.000Z",
 					},
@@ -128,25 +128,25 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 				Pagination: pagination{Limit: 50, HasMore: false},
 			}
 			writeJSON(t, writer, http.StatusOK, secondPage)
-		case request.URL.Path == "/v1/sessions/sid_example_one":
+		case request.URL.Path == "/v1/sessions/sid_0123456789abcdefghjkmnpqrs":
 			writeJSON(t, writer, http.StatusOK, sessionDetail)
 		case request.URL.Path == "/v1/fingerprints":
 			writeJSON(t, writer, http.StatusOK, fingerprintList)
-		case request.URL.Path == "/v1/fingerprints/vis_example_one":
+		case request.URL.Path == "/v1/fingerprints/vid_456789abcdefghjkmnpqrstvwx":
 			writeJSON(t, writer, http.StatusOK, fingerprintDetail)
 		case request.URL.Path == "/v1/teams" && request.Method == http.MethodPost:
 			writeJSON(t, writer, http.StatusCreated, teamCreate)
-		case request.URL.Path == "/v1/teams/team_example" && request.Method == http.MethodGet:
+		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy" && request.Method == http.MethodGet:
 			writeJSON(t, writer, http.StatusOK, teamGet)
-		case request.URL.Path == "/v1/teams/team_example" && request.Method == http.MethodPatch:
+		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy" && request.Method == http.MethodPatch:
 			writeJSON(t, writer, http.StatusOK, teamUpdate)
-		case request.URL.Path == "/v1/teams/team_example/api-keys" && request.Method == http.MethodPost:
+		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys" && request.Method == http.MethodPost:
 			writeJSON(t, writer, http.StatusCreated, apiKeyCreate)
-		case request.URL.Path == "/v1/teams/team_example/api-keys" && request.Method == http.MethodGet:
+		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys" && request.Method == http.MethodGet:
 			writeJSON(t, writer, http.StatusOK, apiKeyList)
-		case request.URL.Path == "/v1/teams/team_example/api-keys/key_example/rotations":
+		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz/rotations":
 			writeJSON(t, writer, http.StatusCreated, apiKeyRotate)
-		case request.URL.Path == "/v1/teams/team_example/api-keys/key_example":
+		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz":
 			writer.WriteHeader(http.StatusNoContent)
 		default:
 			t.Fatalf("unexpected request %s %s", request.Method, request.URL.Path)
@@ -176,8 +176,8 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 		t.Fatalf("expected 2 session ids, got %d", len(sessionIDs))
 	}
 
-	session, err := client.Sessions.Get(context.Background(), "sid_example_one")
-	if err != nil || session.ID != "sid_example_one" {
+	session, err := client.Sessions.Get(context.Background(), "sid_0123456789abcdefghjkmnpqrs")
+	if err != nil || session.ID != "sid_0123456789abcdefghjkmnpqrs" {
 		t.Fatalf("unexpected session detail %#v err=%v", session, err)
 	}
 
@@ -185,35 +185,35 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 	if err != nil || len(fingerprints.Items) != 1 {
 		t.Fatalf("unexpected fingerprint list %#v err=%v", fingerprints, err)
 	}
-	fingerprint, err := client.Fingerprints.Get(context.Background(), "vis_example_one")
-	if err != nil || fingerprint.ID != "vis_example_one" {
+	fingerprint, err := client.Fingerprints.Get(context.Background(), "vid_456789abcdefghjkmnpqrstvwx")
+	if err != nil || fingerprint.ID != "vid_456789abcdefghjkmnpqrstvwx" {
 		t.Fatalf("unexpected fingerprint detail %#v err=%v", fingerprint, err)
 	}
 
-	team, err := client.Teams.Get(context.Background(), "team_example")
-	if err != nil || team.ID != "team_example" {
+	team, err := client.Teams.Get(context.Background(), "team_56789abcdefghjkmnpqrstvwxy")
+	if err != nil || team.ID != "team_56789abcdefghjkmnpqrstvwxy" {
 		t.Fatalf("unexpected team %#v err=%v", team, err)
 	}
 	createdTeam, err := client.Teams.Create(context.Background(), CreateTeamParams{Name: "Example Team", Slug: "example-team"})
-	if err != nil || createdTeam.ID != "team_example" {
+	if err != nil || createdTeam.ID != "team_56789abcdefghjkmnpqrstvwxy" {
 		t.Fatalf("unexpected created team %#v err=%v", createdTeam, err)
 	}
-	updatedTeam, err := client.Teams.Update(context.Background(), "team_example", UpdateTeamParams{Name: "Updated Example Team"})
+	updatedTeam, err := client.Teams.Update(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", UpdateTeamParams{Name: "Updated Example Team"})
 	if err != nil || updatedTeam.Name != "Updated Example Team" {
 		t.Fatalf("unexpected updated team %#v err=%v", updatedTeam, err)
 	}
-	createdKey, err := client.Teams.APIKeys.Create(context.Background(), "team_example", CreateAPIKeyParams{Name: "Production"})
+	createdKey, err := client.Teams.APIKeys.Create(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", CreateAPIKeyParams{Name: "Production"})
 	if err != nil || createdKey.SecretKey != "sk_live_example" {
 		t.Fatalf("unexpected created api key %#v err=%v", createdKey, err)
 	}
-	keys, err := client.Teams.APIKeys.List(context.Background(), "team_example", APIKeyListParams{})
+	keys, err := client.Teams.APIKeys.List(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", APIKeyListParams{})
 	if err != nil || len(keys.Items) != 1 {
 		t.Fatalf("unexpected api key list %#v err=%v", keys, err)
 	}
-	if err := client.Teams.APIKeys.Revoke(context.Background(), "team_example", "key_example"); err != nil {
+	if err := client.Teams.APIKeys.Revoke(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz"); err != nil {
 		t.Fatalf("revoke api key: %v", err)
 	}
-	rotatedKey, err := client.Teams.APIKeys.Rotate(context.Background(), "team_example", "key_example")
+	rotatedKey, err := client.Teams.APIKeys.Rotate(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")
 	if err != nil || rotatedKey.SecretKey != "sk_live_rotated" {
 		t.Fatalf("unexpected rotated api key %#v err=%v", rotatedKey, err)
 	}

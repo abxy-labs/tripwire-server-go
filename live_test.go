@@ -163,7 +163,7 @@ func bestEffortRevoke(t *testing.T, ctx context.Context, client *Client, teamID 
 		return
 	}
 	if err := client.Teams.APIKeys.Revoke(ctx, teamID, keyID); err != nil {
-		if apiError, ok := err.(*APIError); ok && (apiError.Status == 404 || apiError.Code == "resource.not_found") {
+		if apiError, ok := err.(*APIError); ok && (apiError.Status == 404 || apiError.Code == "request.not_found") {
 			return
 		}
 		t.Fatalf("revoke api key %s: %v", keyID, err)
