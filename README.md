@@ -1,24 +1,36 @@
-# `tripwire-server-go`
+# Tripwire Go Library
 
-Official Tripwire Go server SDK.
+![Preview](https://img.shields.io/badge/status-preview-111827)
+![Go 1.22+](https://img.shields.io/badge/go-1.22%2B-00ADD8?logo=go&logoColor=white)
+![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-`tripwire-server-go` exposes the customer-facing server APIs for:
+The Tripwire Go library provides convenient access to the Tripwire API from Go services and applications. It includes a context-aware client for Sessions, Fingerprints, Teams, Team API key management, and sealed token verification.
 
-- Sessions API
-- Fingerprints API
-- Teams API
-- Team API key management
-- sealed token verification
+The library also provides:
 
-It does not include collect endpoints or internal scoring APIs.
+- a fast configuration path using `TRIPWIRE_SECRET_KEY`
+- iterator-style helpers for cursor-based pagination
+- structured API errors and built-in sealed token verification
+
+## Documentation
+
+See the [Tripwire docs](https://tripwire.com/docs) and [API reference](https://tripwire.com/docs/api-reference/introduction).
 
 ## Installation
+
+You don't need this source code unless you want to modify the module. If you just want to use it, run:
 
 ```bash
 go get github.com/abxy-labs/tripwire-server-go
 ```
 
-## Quick start
+## Requirements
+
+- Go 1.22+
+
+## Usage
+
+The library needs to be configured with your account's secret key. Set `TRIPWIRE_SECRET_KEY` in your environment or pass it explicitly when building a client:
 
 ```go
 package main
@@ -44,18 +56,94 @@ func main() {
     log.Fatal(err)
   }
 
-  log.Println(page.Items[0].ID)
+  session, err := client.Sessions.Get(context.Background(), "sid_123")
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  log.Println(page.Items[0].ID, session.LatestResult.Verdict)
 }
 ```
 
-Defaults:
+### Sealed token verification
 
-- `base_url`: `https://api.tripwirejs.com`
-- `secret_key`: `TRIPWIRE_SECRET_KEY`
-- `timeout`: `30s`
+```go
+result := tripwire.SafeVerifyTripwireToken(sealedToken, "sk_live_...")
+if !result.OK {
+  log.Fatal(result.Error)
+}
 
-## Development
+log.Println(result.Data.Verdict, result.Data.Score)
+```
 
-The canonical cross-language server SDK spec lives in the Tripwire main repo under `sdk-spec/server/`.
-This repo carries a synced copy in `spec/` for standalone testing and release workflows.
-Official Tripwire Go server SDK
+### Pagination
+
+```go
+err := client.Sessions.Iter(context.Background(), tripwire.SessionListParams{Search: "signup"}, func(session tripwire.SessionSummary) error {
+  log.Println(session.ID, session.LatestResult.Verdict)
+  return nil
+})
+if err != nil {
+  log.Fatal(err)
+}
+```
+
+### Fingerprints
+
+```go
+fingerprint, err := client.Fingerprints.Get(context.Background(), "vis_123")
+if err != nil {
+  log.Fatal(err)
+}
+
+log.Println(fingerprint.ID)
+```
+
+### Teams
+
+```go
+team, err := client.Teams.Get(context.Background(), "team_123")
+if err != nil {
+  log.Fatal(err)
+}
+
+updated, err := client.Teams.Update(context.Background(), "team_123", tripwire.UpdateTeamParams{
+  Name: "New Name",
+})
+if err != nil {
+  log.Fatal(err)
+}
+
+_, _ = team, updated
+```
+
+### Team API keys
+
+```go
+created, err := client.Teams.APIKeys.Create(
+  context.Background(),
+  "team_123",
+  tripwire.CreateAPIKeyParams{Name: "Production"},
+)
+if err != nil {
+  log.Fatal(err)
+}
+
+err = client.Teams.APIKeys.Revoke(context.Background(), "team_123", created.ID)
+if err != nil {
+  log.Fatal(err)
+}
+```
+
+### Error handling
+
+```go
+_, err := client.Sessions.List(context.Background(), tripwire.SessionListParams{Limit: 999})
+if apiErr, ok := err.(*tripwire.APIError); ok {
+  log.Println(apiErr.Status, apiErr.Code, apiErr.Message)
+}
+```
+
+## Support
+
+If you need help integrating Tripwire, start with [tripwire.com/docs](https://tripwire.com/docs).
