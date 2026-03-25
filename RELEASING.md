@@ -6,8 +6,7 @@ This repository uses a manual `release.yml` workflow. Versions are independent f
 
 Configure these GitHub settings:
 
-1. Make the repository public.
-2. Create a protected GitHub environment named `release` with required reviewer approval.
+1. Create a protected GitHub environment named `release` with required reviewer approval.
 
 ## Release flow
 
