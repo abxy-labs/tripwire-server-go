@@ -4,7 +4,7 @@
 ![Go 1.22+](https://img.shields.io/badge/go-1.22%2B-00ADD8?logo=go&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-The Tripwire Go library provides convenient access to the Tripwire API from Go services and applications. It includes a context-aware client for Sessions, Fingerprints, Teams, Team API key management, and sealed token verification.
+The Tripwire Go library provides convenient access to the Tripwire API from Go services and applications. It includes a context-aware client for Sessions, visitor fingerprints, Teams, Team API key management, and sealed token verification.
 
 The library also provides:
 
@@ -56,12 +56,12 @@ func main() {
     log.Fatal(err)
   }
 
-  session, err := client.Sessions.Get(context.Background(), "sid_123")
+  session, err := client.Sessions.Get(context.Background(), "sid_0123456789abcdefghjkmnpqrs")
   if err != nil {
     log.Fatal(err)
   }
 
-  log.Println(page.Items[0].ID, session.LatestResult.Verdict)
+  log.Println(page.Items[0].ID, session.Decision.AutomationStatus, session.Highlights[0].Summary)
 }
 ```
 
@@ -73,14 +73,14 @@ if !result.OK {
   log.Fatal(result.Error)
 }
 
-log.Println(result.Data.Verdict, result.Data.Score)
+log.Println(result.Data.Decision.Verdict, result.Data.Decision.RiskScore)
 ```
 
 ### Pagination
 
 ```go
 err := client.Sessions.Iter(context.Background(), tripwire.SessionListParams{Search: "signup"}, func(session tripwire.SessionSummary) error {
-  log.Println(session.ID, session.LatestResult.Verdict)
+  log.Println(session.ID, session.LatestDecision.Verdict)
   return nil
 })
 if err != nil {
@@ -88,10 +88,10 @@ if err != nil {
 }
 ```
 
-### Fingerprints
+### Visitor fingerprints
 
 ```go
-fingerprint, err := client.Fingerprints.Get(context.Background(), "vis_123")
+fingerprint, err := client.Fingerprints.Get(context.Background(), "vid_0123456789abcdefghjkmnpqrs")
 if err != nil {
   log.Fatal(err)
 }
@@ -102,12 +102,12 @@ log.Println(fingerprint.ID)
 ### Teams
 
 ```go
-team, err := client.Teams.Get(context.Background(), "team_123")
+team, err := client.Teams.Get(context.Background(), "team_0123456789abcdefghjkmnpqrs")
 if err != nil {
   log.Fatal(err)
 }
 
-updated, err := client.Teams.Update(context.Background(), "team_123", tripwire.UpdateTeamParams{
+updated, err := client.Teams.Update(context.Background(), "team_0123456789abcdefghjkmnpqrs", tripwire.UpdateTeamParams{
   Name: "New Name",
 })
 if err != nil {
@@ -122,14 +122,14 @@ _, _ = team, updated
 ```go
 created, err := client.Teams.APIKeys.Create(
   context.Background(),
-  "team_123",
-  tripwire.CreateAPIKeyParams{Name: "Production"},
+  "team_0123456789abcdefghjkmnpqrs",
+  tripwire.CreateAPIKeyParams{Name: "Production", Environment: "live"},
 )
 if err != nil {
   log.Fatal(err)
 }
 
-err = client.Teams.APIKeys.Revoke(context.Background(), "team_123", created.ID)
+_, err = client.Teams.APIKeys.Revoke(context.Background(), "team_0123456789abcdefghjkmnpqrs", created.ID)
 if err != nil {
   log.Fatal(err)
 }

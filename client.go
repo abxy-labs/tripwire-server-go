@@ -188,7 +188,7 @@ func parseAPIError(status int, requestID string, body []byte, fallbackMessage st
 		_ = json.Unmarshal(body, &payload)
 	}
 
-	var envelope publicErrorEnvelope
+	var envelope apiErrorEnvelope
 	if err := json.Unmarshal(body, &envelope); err == nil && envelope.Error.Code != "" {
 		if requestID == "" {
 			requestID = envelope.Error.RequestID
@@ -198,7 +198,7 @@ func parseAPIError(status int, requestID string, body []byte, fallbackMessage st
 			Code:        envelope.Error.Code,
 			Message:     envelope.Error.Message,
 			RequestID:   requestID,
-			FieldErrors: envelope.Error.Details.FieldErrors,
+			FieldErrors: envelope.Error.Details.Fields,
 			DocsURL:     envelope.Error.DocsURL,
 			Body:        payload,
 		}
@@ -271,8 +271,8 @@ type FingerprintsService struct {
 	client *Client
 }
 
-func (s *FingerprintsService) List(ctx context.Context, params FingerprintListParams) (ListResult[FingerprintSummary], error) {
-	var envelope resourceListEnvelope[FingerprintSummary]
+func (s *FingerprintsService) List(ctx context.Context, params FingerprintListParams) (ListResult[VisitorFingerprintSummary], error) {
+	var envelope resourceListEnvelope[VisitorFingerprintSummary]
 	err := s.client.doJSON(ctx, http.MethodGet, "/v1/fingerprints", map[string]string{
 		"limit":  intToString(params.Limit),
 		"cursor": params.Cursor,
@@ -280,21 +280,21 @@ func (s *FingerprintsService) List(ctx context.Context, params FingerprintListPa
 		"sort":   params.Sort,
 	}, nil, &envelope)
 	if err != nil {
-		return ListResult[FingerprintSummary]{}, err
+		return ListResult[VisitorFingerprintSummary]{}, err
 	}
 	return normalizeList(envelope), nil
 }
 
-func (s *FingerprintsService) Get(ctx context.Context, visitorID string) (FingerprintDetail, error) {
-	var envelope resourceEnvelope[FingerprintDetail]
+func (s *FingerprintsService) Get(ctx context.Context, visitorID string) (VisitorFingerprintDetail, error) {
+	var envelope resourceEnvelope[VisitorFingerprintDetail]
 	err := s.client.doJSON(ctx, http.MethodGet, "/v1/fingerprints/"+url.PathEscape(visitorID), nil, nil, &envelope)
 	if err != nil {
-		return FingerprintDetail{}, err
+		return VisitorFingerprintDetail{}, err
 	}
 	return envelope.Data, nil
 }
 
-func (s *FingerprintsService) Iter(ctx context.Context, params FingerprintListParams, yield func(FingerprintSummary) error) error {
+func (s *FingerprintsService) Iter(ctx context.Context, params FingerprintListParams, yield func(VisitorFingerprintSummary) error) error {
 	cursor := params.Cursor
 	for {
 		page, err := s.List(ctx, FingerprintListParams{
@@ -375,8 +375,13 @@ func (s *APIKeysService) List(ctx context.Context, teamID string, params APIKeyL
 	return normalizeList(envelope), nil
 }
 
-func (s *APIKeysService) Revoke(ctx context.Context, teamID string, keyID string) error {
-	return s.client.doJSON(ctx, http.MethodDelete, "/v1/teams/"+url.PathEscape(teamID)+"/api-keys/"+url.PathEscape(keyID), nil, nil, nil)
+func (s *APIKeysService) Revoke(ctx context.Context, teamID string, keyID string) (APIKey, error) {
+	var envelope resourceEnvelope[APIKey]
+	err := s.client.doJSON(ctx, http.MethodDelete, "/v1/teams/"+url.PathEscape(teamID)+"/api-keys/"+url.PathEscape(keyID), nil, nil, &envelope)
+	if err != nil {
+		return APIKey{}, err
+	}
+	return envelope.Data, nil
 }
 
 func (s *APIKeysService) Rotate(ctx context.Context, teamID string, keyID string) (IssuedAPIKey, error) {
