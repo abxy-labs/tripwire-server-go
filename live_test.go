@@ -76,10 +76,9 @@ func TestLiveSmoke(t *testing.T) {
 		t.Fatalf("unexpected updated team state %#v", updatedTeam)
 	}
 
-	isTest := true
 	createdKey, err := client.Teams.APIKeys.Create(ctx, teamID, CreateAPIKeyParams{
-		Name:   fmt.Sprintf("sdk-smoke-%x", time.Now().UnixMilli()),
-		IsTest: &isTest,
+		Name:        fmt.Sprintf("sdk-smoke-%x", time.Now().UnixMilli()),
+		Environment: "test",
 	})
 	if err != nil {
 		t.Fatalf("create api key: %v", err)
@@ -116,8 +115,9 @@ func TestLiveSmoke(t *testing.T) {
 	if !result.OK || result.Data == nil {
 		t.Fatalf("verify sealed token fixture: %v", result.Error)
 	}
-	if result.Data.EventID != fixture.Payload["eventId"] {
-		t.Fatalf("unexpected verified event id %#v", result.Data.EventID)
+	decisionRaw, ok := fixture.Payload["decision"].(map[string]any)
+	if !ok || result.Data.Decision.EventID != decisionRaw["event_id"] {
+		t.Fatalf("unexpected verified event id %#v", result.Data.Decision.EventID)
 	}
 }
 
@@ -162,7 +162,7 @@ func bestEffortRevoke(t *testing.T, ctx context.Context, client *Client, teamID 
 	if keyID == "" {
 		return
 	}
-	if err := client.Teams.APIKeys.Revoke(ctx, teamID, keyID); err != nil {
+	if _, err := client.Teams.APIKeys.Revoke(ctx, teamID, keyID); err != nil {
 		if apiError, ok := err.(*APIError); ok && (apiError.Status == 404 || apiError.Code == "request.not_found") {
 			return
 		}

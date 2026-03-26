@@ -3,6 +3,7 @@ package tripwire
 import (
 	"encoding/json"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -76,17 +77,17 @@ func TestOnlySupportedPublicPathsAreExposed(t *testing.T) {
 
 func TestExpectedSuccessFixturesExist(t *testing.T) {
 	paths := []string{
-		"spec/fixtures/public-api/sessions/list.json",
-		"spec/fixtures/public-api/sessions/detail.json",
-		"spec/fixtures/public-api/fingerprints/list.json",
-		"spec/fixtures/public-api/fingerprints/detail.json",
-		"spec/fixtures/public-api/teams/team.json",
-		"spec/fixtures/public-api/teams/team-create.json",
-		"spec/fixtures/public-api/teams/team-update.json",
-		"spec/fixtures/public-api/teams/api-key-create.json",
-		"spec/fixtures/public-api/teams/api-key-list.json",
-		"spec/fixtures/public-api/teams/api-key-rotate.json",
-		"spec/fixtures/public-api/teams/api-key-revoke.json",
+		"spec/fixtures/api/sessions/list.json",
+		"spec/fixtures/api/sessions/detail.json",
+		"spec/fixtures/api/fingerprints/list.json",
+		"spec/fixtures/api/fingerprints/detail.json",
+		"spec/fixtures/api/teams/team.json",
+		"spec/fixtures/api/teams/team-create.json",
+		"spec/fixtures/api/teams/team-update.json",
+		"spec/fixtures/api/teams/api-key-create.json",
+		"spec/fixtures/api/teams/api-key-list.json",
+		"spec/fixtures/api/teams/api-key-rotate.json",
+		"spec/fixtures/api/teams/api-key-revoke.json",
 	}
 	for _, path := range paths {
 		if _, err := os.Stat(path); err != nil {
@@ -148,8 +149,33 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 	for _, item := range sessionDetailRequired {
 		requiredSet[item] = true
 	}
-	if !requiredSet["ipIntel"] {
-		t.Fatalf("SessionDetail.required should include ipIntel")
+	for _, field := range []string{"decision", "highlights", "automation", "web_bot_auth", "network", "runtime_integrity", "visitor_fingerprint", "connection_fingerprint", "previous_decisions", "request", "browser", "device", "analysis_coverage", "signals_fired", "client_telemetry"} {
+		if !requiredSet[field] {
+			t.Fatalf("SessionDetail.required should include %s", field)
+		}
+	}
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["request"]; !reflect.DeepEqual(got, map[string]any{"$ref": "#/components/schemas/SessionDetailRequest"}) {
+		t.Fatalf("SessionDetail.request should reference SessionDetailRequest, got %#v", got)
+	}
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["client_telemetry"]; !reflect.DeepEqual(got, map[string]any{"$ref": "#/components/schemas/SessionClientTelemetry"}) {
+		t.Fatalf("SessionDetail.client_telemetry should reference SessionClientTelemetry, got %#v", got)
+	}
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["automation"]; !reflect.DeepEqual(got, map[string]any{
+		"anyOf": []any{
+			map[string]any{"$ref": "#/components/schemas/SessionAutomation"},
+			map[string]any{"type": "null"},
+		},
+	}) {
+		t.Fatalf("SessionDetail.automation should allow SessionAutomation or null, got %#v", got)
+	}
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["signals_fired"]; !reflect.DeepEqual(got, map[string]any{
+		"type":  "array",
+		"items": map[string]any{"$ref": "#/components/schemas/SessionSignalFired"},
+	}) {
+		t.Fatalf("SessionDetail.signals_fired should reference SessionSignalFired items, got %#v", got)
+	}
+	if got := nestedMap(t, nestedMap(t, schemas["SessionSignalFired"], "SessionSignalFired")["properties"], "SessionSignalFired.properties")["signal"]; nestedMap(t, got, "SessionSignalFired.properties.signal")["type"] != "string" {
+		t.Fatalf("SessionSignalFired.signal should be a string, got %#v", got)
 	}
 
 	apiKeyRequired := nestedStringSlice(t, nestedMap(t, schemas["ApiKey"], "ApiKey")["required"], "ApiKey.required")
@@ -157,7 +183,7 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 	for _, item := range apiKeyRequired {
 		requiredSet[item] = true
 	}
-	for _, field := range []string{"allowedOrigins", "rateLimit", "rotatedAt", "revokedAt"} {
+	for _, field := range []string{"allowed_origins", "rate_limit", "rotated_at", "revoked_at"} {
 		if !requiredSet[field] {
 			t.Fatalf("ApiKey.required should include %s", field)
 		}
@@ -181,7 +207,7 @@ func TestPublicOperationsHaveStableIDsAndTags(t *testing.T) {
 	}
 
 	assertOperation("/v1/sessions", "get", "listSessions", "Sessions")
-	assertOperation("/v1/fingerprints/{visitorId}", "get", "getFingerprint", "Fingerprints")
+	assertOperation("/v1/fingerprints/{visitorId}", "get", "getVisitorFingerprint", "Visitor fingerprints")
 	assertOperation("/v1/teams/{teamId}", "patch", "updateTeam", "Teams")
 	assertOperation("/v1/teams/{teamId}/api-keys/{keyId}/rotations", "post", "rotateTeamApiKey", "API Keys")
 }

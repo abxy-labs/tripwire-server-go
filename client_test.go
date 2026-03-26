@@ -28,7 +28,7 @@ func TestClientUsesEnvSecretFallback(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fixture := loadFixture[resourceListEnvelope[SessionSummary]](t, "public-api/sessions/list.json")
+	fixture := loadFixture[resourceListEnvelope[SessionSummary]](t, "api/sessions/list.json")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writeJSON(t, writer, http.StatusOK, fixture)
 	}))
@@ -59,7 +59,7 @@ func TestClientMissingSecretFails(t *testing.T) {
 }
 
 func TestClientAppliesBaseURLTimeoutAndHeaders(t *testing.T) {
-	fixture := loadFixture[resourceListEnvelope[SessionSummary]](t, "public-api/sessions/list.json")
+	fixture := loadFixture[resourceListEnvelope[SessionSummary]](t, "api/sessions/list.json")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.String() != "/v1/sessions?limit=5" {
 			t.Fatalf("unexpected path %s", request.URL.String())
@@ -97,16 +97,16 @@ func TestClientAppliesBaseURLTimeoutAndHeaders(t *testing.T) {
 }
 
 func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
-	sessionList := loadFixture[resourceListEnvelope[SessionSummary]](t, "public-api/sessions/list.json")
-	sessionDetail := loadFixture[resourceEnvelope[SessionDetail]](t, "public-api/sessions/detail.json")
-	fingerprintList := loadFixture[resourceListEnvelope[FingerprintSummary]](t, "public-api/fingerprints/list.json")
-	fingerprintDetail := loadFixture[resourceEnvelope[FingerprintDetail]](t, "public-api/fingerprints/detail.json")
-	teamGet := loadFixture[resourceEnvelope[Team]](t, "public-api/teams/team.json")
-	teamCreate := loadFixture[resourceEnvelope[Team]](t, "public-api/teams/team-create.json")
-	teamUpdate := loadFixture[resourceEnvelope[Team]](t, "public-api/teams/team-update.json")
-	apiKeyCreate := loadFixture[resourceEnvelope[IssuedAPIKey]](t, "public-api/teams/api-key-create.json")
-	apiKeyList := loadFixture[resourceListEnvelope[APIKey]](t, "public-api/teams/api-key-list.json")
-	apiKeyRotate := loadFixture[resourceEnvelope[IssuedAPIKey]](t, "public-api/teams/api-key-rotate.json")
+	sessionList := loadFixture[resourceListEnvelope[SessionSummary]](t, "api/sessions/list.json")
+	sessionDetail := loadFixture[resourceEnvelope[SessionDetail]](t, "api/sessions/detail.json")
+	fingerprintList := loadFixture[resourceListEnvelope[VisitorFingerprintSummary]](t, "api/fingerprints/list.json")
+	fingerprintDetail := loadFixture[resourceEnvelope[VisitorFingerprintDetail]](t, "api/fingerprints/detail.json")
+	teamGet := loadFixture[resourceEnvelope[Team]](t, "api/teams/team.json")
+	teamCreate := loadFixture[resourceEnvelope[Team]](t, "api/teams/team-create.json")
+	teamUpdate := loadFixture[resourceEnvelope[Team]](t, "api/teams/team-update.json")
+	apiKeyCreate := loadFixture[resourceEnvelope[IssuedAPIKey]](t, "api/teams/api-key-create.json")
+	apiKeyList := loadFixture[resourceListEnvelope[APIKey]](t, "api/teams/api-key-list.json")
+	apiKeyRotate := loadFixture[resourceEnvelope[IssuedAPIKey]](t, "api/teams/api-key-rotate.json")
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch {
@@ -118,14 +118,24 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 			secondPage := resourceListEnvelope[SessionSummary]{
 				Data: []SessionSummary{
 					{
-						Object:        "session",
-						ID:            "sid_123456789abcdefghjkmnpqrst",
-						LatestEventID: "evt_3456789abcdefghjkmnpqrstvw",
-						LatestResult:  sessionList.Data[0].LatestResult,
-						LastScoredAt:  "2026-03-24T20:01:05.000Z",
+						Object:    "session",
+						ID:        "sid_123456789abcdefghjkmnpqrst",
+						CreatedAt: sessionList.Data[0].CreatedAt,
+						LatestDecision: Decision{
+							EventID:              "evt_3456789abcdefghjkmnpqrstvw",
+							Verdict:              sessionList.Data[0].LatestDecision.Verdict,
+							RiskScore:            sessionList.Data[0].LatestDecision.RiskScore,
+							Phase:                sessionList.Data[0].LatestDecision.Phase,
+							IsProvisional:        sessionList.Data[0].LatestDecision.IsProvisional,
+							Manipulation:         sessionList.Data[0].LatestDecision.Manipulation,
+							EvaluationDurationMS: sessionList.Data[0].LatestDecision.EvaluationDurationMS,
+							EvaluatedAt:          "2026-03-24T20:01:05.000Z",
+						},
+						VisitorFingerprint: sessionList.Data[0].VisitorFingerprint,
 					},
 				},
 				Pagination: pagination{Limit: 50, HasMore: false},
+				Meta:       meta{RequestID: "req_0123456789abcdef0123456789abcdef"},
 			}
 			writeJSON(t, writer, http.StatusOK, secondPage)
 		case request.URL.Path == "/v1/sessions/sid_0123456789abcdefghjkmnpqrs":
@@ -147,7 +157,8 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz/rotations":
 			writeJSON(t, writer, http.StatusCreated, apiKeyRotate)
 		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz":
-			writer.WriteHeader(http.StatusNoContent)
+			revokeFixture := loadFixture[resourceEnvelope[APIKey]](t, "api/teams/api-key-revoke.json")
+			writeJSON(t, writer, http.StatusOK, revokeFixture)
 		default:
 			t.Fatalf("unexpected request %s %s", request.Method, request.URL.Path)
 		}
@@ -199,7 +210,7 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 		t.Fatalf("unexpected created team %#v err=%v", createdTeam, err)
 	}
 	updatedTeam, err := client.Teams.Update(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", UpdateTeamParams{Name: "Updated Example Team"})
-	if err != nil || updatedTeam.Name != "Updated Example Team" {
+	if err != nil || updatedTeam.Name != "Example Team" {
 		t.Fatalf("unexpected updated team %#v err=%v", updatedTeam, err)
 	}
 	createdKey, err := client.Teams.APIKeys.Create(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", CreateAPIKeyParams{Name: "Production"})
@@ -210,8 +221,9 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 	if err != nil || len(keys.Items) != 1 {
 		t.Fatalf("unexpected api key list %#v err=%v", keys, err)
 	}
-	if err := client.Teams.APIKeys.Revoke(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz"); err != nil {
-		t.Fatalf("revoke api key: %v", err)
+	revokedKey, err := client.Teams.APIKeys.Revoke(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")
+	if err != nil || revokedKey.ID != "key_6789abcdefghjkmnpqrstvwxyz" {
+		t.Fatalf("unexpected revoked api key %#v err=%v", revokedKey, err)
 	}
 	rotatedKey, err := client.Teams.APIKeys.Rotate(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")
 	if err != nil || rotatedKey.SecretKey != "sk_live_rotated" {
@@ -229,7 +241,7 @@ func TestAPIErrorsAreParsed(t *testing.T) {
 
 	for _, fixturePath := range fixtures {
 		t.Run(fixturePath, func(t *testing.T) {
-			fixture := loadFixture[publicErrorEnvelope](t, fixturePath)
+			fixture := loadFixture[apiErrorEnvelope](t, fixturePath)
 			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				writer.Header().Set("x-request-id", fixture.Error.RequestID)
 				writeJSON(t, writer, fixture.Error.Status, fixture)

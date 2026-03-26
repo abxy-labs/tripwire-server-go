@@ -17,16 +17,17 @@ func TestVerifyTripwireTokenFixture(t *testing.T) {
 	if err != nil {
 		t.Fatalf("verify token with secret key: %v", err)
 	}
-	if verified.Raw["eventId"] != fixture.Payload["eventId"] {
-		t.Fatalf("unexpected event id %#v", verified.Raw["eventId"])
+	if verified.SessionID != fixture.Payload["session_id"] {
+		t.Fatalf("unexpected session id %#v", verified.SessionID)
 	}
 
 	verified, err = VerifyTripwireToken(fixture.Token, fixture.SecretHash)
 	if err != nil {
 		t.Fatalf("verify token with secret hash: %v", err)
 	}
-	if verified.Raw["sessionId"] != fixture.Payload["sessionId"] {
-		t.Fatalf("unexpected session id %#v", verified.Raw["sessionId"])
+	decisionRaw, ok := fixture.Payload["decision"].(map[string]any)
+	if !ok || verified.Decision.EventID != decisionRaw["event_id"] {
+		t.Fatalf("unexpected decision event id %#v", verified.Decision.EventID)
 	}
 }
 
