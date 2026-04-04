@@ -1,5 +1,7 @@
 package tripwire
 
+import "crypto/ecdh"
+
 type GateServiceStatus string
 
 const (
@@ -120,6 +122,51 @@ type GateDeliveryEnvelope struct {
 	IV                 string `json:"iv"`
 	Ciphertext         string `json:"ciphertext"`
 	Tag                string `json:"tag"`
+}
+
+type GateDeliveryPayload struct {
+	Version  int               `json:"version"`
+	Outputs  map[string]string `json:"outputs"`
+	AckToken string            `json:"ack_token,omitempty"`
+}
+
+type GeneratedDeliveryKeyPair struct {
+	Delivery   GateDeliveryRequest
+	PrivateKey *ecdh.PrivateKey
+}
+
+type GateEncryptedDeliveryResponse struct {
+	EncryptedDelivery GateDeliveryEnvelope `json:"encrypted_delivery"`
+}
+
+type GateDeliveryHelperInput struct {
+	Delivery GateDeliveryRequest `json:"delivery"`
+	Outputs  map[string]string   `json:"outputs"`
+}
+
+type GateApprovedWebhookTripwire struct {
+	Verdict string   `json:"verdict"`
+	Score   *float64 `json:"score"`
+}
+
+type GateApprovedWebhookPayload struct {
+	Event         string                      `json:"event"`
+	ServiceID     string                      `json:"service_id"`
+	GateSessionID string                      `json:"gate_session_id"`
+	GateAccountID string                      `json:"gate_account_id"`
+	AccountName   string                      `json:"account_name"`
+	Metadata      map[string]any              `json:"metadata"`
+	Tripwire      GateApprovedWebhookTripwire `json:"tripwire"`
+	Delivery      GateDeliveryRequest         `json:"delivery"`
+}
+
+type VerifyGateWebhookSignatureInput struct {
+	Secret        string
+	Timestamp     string
+	RawBody       string
+	Signature     string
+	MaxAgeSeconds int64
+	NowSeconds    int64
 }
 
 type GateDeliveryBundle struct {

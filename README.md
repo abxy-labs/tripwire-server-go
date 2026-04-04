@@ -4,13 +4,14 @@
 ![Go 1.22+](https://img.shields.io/badge/go-1.22%2B-00ADD8?logo=go&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-The Tripwire Go library provides convenient access to the Tripwire API from Go services and applications. It includes a context-aware client for Sessions, visitor fingerprints, Teams, Team API key management, and sealed token verification.
+The Tripwire Go library provides convenient access to the Tripwire API from Go services and applications. It includes a context-aware client for Sessions, visitor fingerprints, Teams, Gate, Team API key management, sealed token verification, and Gate delivery/webhook helpers.
 
 The library also provides:
 
 - a fast configuration path using `TRIPWIRE_SECRET_KEY`
+- public, bearer-token, and secret-key auth modes for Gate flows
 - iterator-style helpers for cursor-based pagination
-- structured API errors and built-in sealed token verification
+- structured API errors, built-in sealed token verification, and Gate delivery/webhook helpers
 
 ## Documentation
 
@@ -30,7 +31,7 @@ go get github.com/abxy-labs/tripwire-server-go
 
 ## Usage
 
-The library needs to be configured with your account's secret key. Set `TRIPWIRE_SECRET_KEY` in your environment or pass it explicitly when building a client:
+The client can be created without a secret key for public or bearer-auth Gate flows. Secret-auth routes use `TRIPWIRE_SECRET_KEY` or `WithSecretKey(...)`:
 
 ```go
 package main
@@ -65,6 +66,31 @@ func main() {
 }
 ```
 
+### Gate APIs
+
+```go
+deliveryKeyPair, err := tripwire.CreateDeliveryKeyPair()
+if err != nil {
+  log.Fatal(err)
+}
+
+registry, err := client.Gate.Registry.List(context.Background())
+if err != nil {
+  log.Fatal(err)
+}
+
+session, err := client.Gate.Sessions.Create(context.Background(), tripwire.CreateGateSessionParams{
+  ServiceID:   "tripwire",
+  AccountName: "my-project",
+  Delivery:    deliveryKeyPair.Delivery,
+})
+if err != nil {
+  log.Fatal(err)
+}
+
+log.Println(registry[0].ID, session.ConsentURL)
+```
+
 ### Sealed token verification
 
 ```go
@@ -74,6 +100,33 @@ if !result.OK {
 }
 
 log.Println(result.Data.Decision.Verdict, result.Data.Decision.RiskScore)
+```
+
+### Gate delivery and webhook helpers
+
+```go
+deliveryKeyPair, err := tripwire.CreateDeliveryKeyPair()
+if err != nil {
+  log.Fatal(err)
+}
+
+response, err := tripwire.CreateGateApprovedWebhookResponse(tripwire.GateDeliveryHelperInput{
+  Delivery: deliveryKeyPair.Delivery,
+  Outputs: map[string]string{
+    "TRIPWIRE_PUBLISHABLE_KEY": "pk_live_...",
+    "TRIPWIRE_SECRET_KEY":      "sk_live_...",
+  },
+})
+if err != nil {
+  log.Fatal(err)
+}
+
+payload, err := tripwire.DecryptGateDeliveryEnvelope(deliveryKeyPair.PrivateKey, response.EncryptedDelivery)
+if err != nil {
+  log.Fatal(err)
+}
+
+log.Println(payload.Outputs["TRIPWIRE_SECRET_KEY"])
 ```
 
 ### Pagination
