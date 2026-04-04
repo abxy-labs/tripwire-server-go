@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ecdh"
-	"crypto/hkdf"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -287,7 +286,7 @@ func EncryptGateDeliveryPayload(delivery GateDeliveryRequest, payload GateDelive
 	if err != nil {
 		return nil, err
 	}
-	key, err := hkdf.Key(sha256.New, sharedSecret, salt, string(gateDeliveryHKDFInfo), 32)
+	key, err := deriveGateDeliveryKey(sharedSecret, salt)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +380,7 @@ func DecryptGateDeliveryEnvelope(privateKey any, envelope GateDeliveryEnvelope) 
 	if err != nil {
 		return nil, err
 	}
-	key, err := hkdf.Key(sha256.New, sharedSecret, salt, string(gateDeliveryHKDFInfo), 32)
+	key, err := deriveGateDeliveryKey(sharedSecret, salt)
 	if err != nil {
 		return nil, err
 	}
@@ -424,6 +423,20 @@ func DecryptGateDeliveryEnvelope(privateKey any, envelope GateDeliveryEnvelope) 
 
 func b64urlEncode(value []byte) string {
 	return base64.RawURLEncoding.EncodeToString(value)
+}
+
+func deriveGateDeliveryKey(sharedSecret []byte, salt []byte) ([]byte, error) {
+	if len(salt) == 0 {
+		salt = make([]byte, sha256.Size)
+	}
+	extract := hmac.New(sha256.New, salt)
+	extract.Write(sharedSecret)
+	prk := extract.Sum(nil)
+
+	expand := hmac.New(sha256.New, prk)
+	expand.Write(gateDeliveryHKDFInfo)
+	expand.Write([]byte{1})
+	return expand.Sum(nil), nil
 }
 
 func b64urlDecode(value string, label string) ([]byte, error) {
