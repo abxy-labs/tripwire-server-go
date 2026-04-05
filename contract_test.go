@@ -57,6 +57,17 @@ func TestOnlySupportedPublicPathsAreExposed(t *testing.T) {
 	expected := []string{
 		"/v1/fingerprints",
 		"/v1/fingerprints/{visitorId}",
+		"/v1/gate/agent-tokens/revoke",
+		"/v1/gate/agent-tokens/verify",
+		"/v1/gate/login-sessions",
+		"/v1/gate/login-sessions/consume",
+		"/v1/gate/registry",
+		"/v1/gate/registry/{serviceId}",
+		"/v1/gate/services",
+		"/v1/gate/services/{serviceId}",
+		"/v1/gate/sessions",
+		"/v1/gate/sessions/{gateSessionId}",
+		"/v1/gate/sessions/{gateSessionId}/ack",
 		"/v1/sessions",
 		"/v1/sessions/{sessionId}",
 		"/v1/teams",
@@ -81,6 +92,20 @@ func TestExpectedSuccessFixturesExist(t *testing.T) {
 		"spec/fixtures/api/sessions/detail.json",
 		"spec/fixtures/api/fingerprints/list.json",
 		"spec/fixtures/api/fingerprints/detail.json",
+		"spec/fixtures/api/gate/registry-list.json",
+		"spec/fixtures/api/gate/registry-detail.json",
+		"spec/fixtures/api/gate/services-list.json",
+		"spec/fixtures/api/gate/service-detail.json",
+		"spec/fixtures/api/gate/service-create.json",
+		"spec/fixtures/api/gate/service-update.json",
+		"spec/fixtures/api/gate/service-disable.json",
+		"spec/fixtures/api/gate/session-create.json",
+		"spec/fixtures/api/gate/session-poll.json",
+		"spec/fixtures/api/gate/session-ack.json",
+		"spec/fixtures/api/gate/login-session-create.json",
+		"spec/fixtures/api/gate/login-session-consume.json",
+		"spec/fixtures/api/gate/agent-token-verify.json",
+		"spec/fixtures/api/gate/agent-token-revoke.json",
 		"spec/fixtures/api/teams/team.json",
 		"spec/fixtures/api/teams/team-create.json",
 		"spec/fixtures/api/teams/team-update.json",
@@ -177,6 +202,12 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 	if got := nestedMap(t, nestedMap(t, schemas["SessionSignalFired"], "SessionSignalFired")["properties"], "SessionSignalFired.properties")["signal"]; nestedMap(t, got, "SessionSignalFired.properties.signal")["type"] != "string" {
 		t.Fatalf("SessionSignalFired.signal should be a string, got %#v", got)
 	}
+	if properties := nestedMap(t, schemas["GateManagedService"], "GateManagedService")["properties"]; nestedMap(t, properties, "GateManagedService.properties")["team_id"] != nil {
+		t.Fatalf("GateManagedService should not expose team_id")
+	}
+	if properties := nestedMap(t, schemas["GateManagedService"], "GateManagedService")["properties"]; nestedMap(t, properties, "GateManagedService.properties")["webhook_secret"] != nil {
+		t.Fatalf("GateManagedService should not expose webhook_secret")
+	}
 
 	apiKeyRequired := nestedStringSlice(t, nestedMap(t, schemas["ApiKey"], "ApiKey")["required"], "ApiKey.required")
 	requiredSet = map[string]bool{}
@@ -210,4 +241,7 @@ func TestPublicOperationsHaveStableIDsAndTags(t *testing.T) {
 	assertOperation("/v1/fingerprints/{visitorId}", "get", "getVisitorFingerprint", "Visitor fingerprints")
 	assertOperation("/v1/teams/{teamId}", "patch", "updateTeam", "Teams")
 	assertOperation("/v1/teams/{teamId}/api-keys/{keyId}/rotations", "post", "rotateTeamApiKey", "API Keys")
+	assertOperation("/v1/gate/services", "post", "createManagedGateService", "Gate")
+	assertOperation("/v1/gate/sessions/{gateSessionId}", "get", "pollGateSession", "Gate")
+	assertOperation("/v1/gate/agent-tokens/revoke", "post", "revokeGateAgentToken", "Gate")
 }
