@@ -51,6 +51,28 @@ func nestedStringSlice(t *testing.T, value any, path string) []string {
 	return result
 }
 
+func stripExamples(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(typed))
+		for key, item := range typed {
+			if key == "example" {
+				continue
+			}
+			result[key] = stripExamples(item)
+		}
+		return result
+	case []any:
+		result := make([]any, len(typed))
+		for index, item := range typed {
+			result[index] = stripExamples(item)
+		}
+		return result
+	default:
+		return value
+	}
+}
+
 func TestOnlySupportedPublicPathsAreExposed(t *testing.T) {
 	spec := readContractSpec(t)
 	paths := nestedMap(t, spec["paths"], "paths")
@@ -179,13 +201,13 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 			t.Fatalf("SessionDetail.required should include %s", field)
 		}
 	}
-	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["request"]; !reflect.DeepEqual(got, map[string]any{"$ref": "#/components/schemas/SessionDetailRequest"}) {
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["request"]; !reflect.DeepEqual(stripExamples(got), map[string]any{"$ref": "#/components/schemas/SessionDetailRequest"}) {
 		t.Fatalf("SessionDetail.request should reference SessionDetailRequest, got %#v", got)
 	}
-	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["client_telemetry"]; !reflect.DeepEqual(got, map[string]any{"$ref": "#/components/schemas/SessionClientTelemetry"}) {
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["client_telemetry"]; !reflect.DeepEqual(stripExamples(got), map[string]any{"$ref": "#/components/schemas/SessionClientTelemetry"}) {
 		t.Fatalf("SessionDetail.client_telemetry should reference SessionClientTelemetry, got %#v", got)
 	}
-	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["automation"]; !reflect.DeepEqual(got, map[string]any{
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["automation"]; !reflect.DeepEqual(stripExamples(got), map[string]any{
 		"anyOf": []any{
 			map[string]any{"$ref": "#/components/schemas/SessionAutomation"},
 			map[string]any{"type": "null"},
@@ -193,7 +215,7 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 	}) {
 		t.Fatalf("SessionDetail.automation should allow SessionAutomation or null, got %#v", got)
 	}
-	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["signals_fired"]; !reflect.DeepEqual(got, map[string]any{
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["signals_fired"]; !reflect.DeepEqual(stripExamples(got), map[string]any{
 		"type":  "array",
 		"items": map[string]any{"$ref": "#/components/schemas/SessionSignalFired"},
 	}) {
