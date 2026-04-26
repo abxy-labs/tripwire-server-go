@@ -23,14 +23,14 @@ func TestLiveSmoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new client: %v", err)
 	}
-	teamID := requireEnv(t, "TRIPWIRE_SMOKE_TEAM_ID")
+	organizationID := requireEnv(t, "TRIPWIRE_SMOKE_ORGANIZATION_ID")
 
 	var createdKeyID string
 	var rotatedKeyID string
 	defer func() {
-		bestEffortRevoke(t, ctx, client, teamID, rotatedKeyID)
+		bestEffortRevoke(t, ctx, client, organizationID, rotatedKeyID)
 		if createdKeyID != "" && createdKeyID != rotatedKeyID {
-			bestEffortRevoke(t, ctx, client, teamID, createdKeyID)
+			bestEffortRevoke(t, ctx, client, organizationID, createdKeyID)
 		}
 	}()
 
@@ -39,7 +39,7 @@ func TestLiveSmoke(t *testing.T) {
 		t.Fatalf("list sessions: %v", err)
 	}
 	if len(sessions.Items) == 0 {
-		t.Fatal("smoke team must have at least one session for the live smoke suite")
+		t.Fatal("smoke organization must have at least one session for the live smoke suite")
 	}
 	session, err := client.Sessions.Get(ctx, sessions.Items[0].ID)
 	if err != nil {
@@ -54,7 +54,7 @@ func TestLiveSmoke(t *testing.T) {
 		t.Fatalf("list fingerprints: %v", err)
 	}
 	if len(fingerprints.Items) == 0 {
-		t.Fatal("smoke team must have at least one fingerprint for the live smoke suite")
+		t.Fatal("smoke organization must have at least one fingerprint for the live smoke suite")
 	}
 	fingerprint, err := client.Fingerprints.Get(ctx, fingerprints.Items[0].ID)
 	if err != nil {
@@ -64,19 +64,19 @@ func TestLiveSmoke(t *testing.T) {
 		t.Fatalf("unexpected fingerprint id %q", fingerprint.ID)
 	}
 
-	team, err := client.Teams.Get(ctx, teamID)
+	organization, err := client.Organizations.Get(ctx, organizationID)
 	if err != nil {
-		t.Fatalf("get team: %v", err)
+		t.Fatalf("get organization: %v", err)
 	}
-	updatedTeam, err := client.Teams.Update(ctx, teamID, UpdateTeamParams{Name: team.Name, Status: team.Status})
+	updatedOrganization, err := client.Organizations.Update(ctx, organizationID, UpdateOrganizationParams{Name: organization.Name, Status: organization.Status})
 	if err != nil {
-		t.Fatalf("update team: %v", err)
+		t.Fatalf("update organization: %v", err)
 	}
-	if updatedTeam.Name != team.Name || updatedTeam.Status != team.Status {
-		t.Fatalf("unexpected updated team state %#v", updatedTeam)
+	if updatedOrganization.Name != organization.Name || updatedOrganization.Status != organization.Status {
+		t.Fatalf("unexpected updated organization state %#v", updatedOrganization)
 	}
 
-	createdKey, err := client.Teams.APIKeys.Create(ctx, teamID, CreateAPIKeyParams{
+	createdKey, err := client.Organizations.APIKeys.Create(ctx, organizationID, CreateAPIKeyParams{
 		Name:        fmt.Sprintf("sdk-smoke-%x", time.Now().UnixMilli()),
 		Environment: "test",
 	})
@@ -84,11 +84,11 @@ func TestLiveSmoke(t *testing.T) {
 		t.Fatalf("create api key: %v", err)
 	}
 	createdKeyID = createdKey.ID
-	if len(createdKey.SecretKey) < 3 || createdKey.SecretKey[:3] != "sk_" {
-		t.Fatalf("unexpected created secret key %q", createdKey.SecretKey)
+	if len(createdKey.RevealedKey) < 3 || createdKey.RevealedKey[:3] != "sk_" {
+		t.Fatalf("unexpected created secret key %q", createdKey.RevealedKey)
 	}
 
-	listedKey, err := findAPIKey(ctx, client, teamID, createdKey.ID)
+	listedKey, err := findAPIKey(ctx, client, organizationID, createdKey.ID)
 	if err != nil {
 		t.Fatalf("list api keys: %v", err)
 	}
@@ -96,13 +96,13 @@ func TestLiveSmoke(t *testing.T) {
 		t.Fatalf("created key %q not found in api key list", createdKey.ID)
 	}
 
-	rotatedKey, err := client.Teams.APIKeys.Rotate(ctx, teamID, createdKey.ID)
+	rotatedKey, err := client.Organizations.APIKeys.Rotate(ctx, organizationID, createdKey.ID)
 	if err != nil {
 		t.Fatalf("rotate api key: %v", err)
 	}
 	rotatedKeyID = rotatedKey.ID
-	if len(rotatedKey.SecretKey) < 3 || rotatedKey.SecretKey[:3] != "sk_" {
-		t.Fatalf("unexpected rotated secret key %q", rotatedKey.SecretKey)
+	if len(rotatedKey.RevealedKey) < 3 || rotatedKey.RevealedKey[:3] != "sk_" {
+		t.Fatalf("unexpected rotated secret key %q", rotatedKey.RevealedKey)
 	}
 
 	fixture := loadFixture[struct {
@@ -137,10 +137,10 @@ func envOrDefault(name string, fallback string) string {
 	return fallback
 }
 
-func findAPIKey(ctx context.Context, client *Client, teamID string, keyID string) (*APIKey, error) {
+func findAPIKey(ctx context.Context, client *Client, organizationID string, keyID string) (*APIKey, error) {
 	cursor := ""
 	for {
-		page, err := client.Teams.APIKeys.List(ctx, teamID, APIKeyListParams{Limit: 100, Cursor: cursor})
+		page, err := client.Organizations.APIKeys.List(ctx, organizationID, APIKeyListParams{Limit: 100, Cursor: cursor})
 		if err != nil {
 			return nil, err
 		}
@@ -157,12 +157,12 @@ func findAPIKey(ctx context.Context, client *Client, teamID string, keyID string
 	}
 }
 
-func bestEffortRevoke(t *testing.T, ctx context.Context, client *Client, teamID string, keyID string) {
+func bestEffortRevoke(t *testing.T, ctx context.Context, client *Client, organizationID string, keyID string) {
 	t.Helper()
 	if keyID == "" {
 		return
 	}
-	if _, err := client.Teams.APIKeys.Revoke(ctx, teamID, keyID); err != nil {
+	if _, err := client.Organizations.APIKeys.Revoke(ctx, organizationID, keyID); err != nil {
 		if apiError, ok := err.(*APIError); ok && (apiError.Status == 404 || apiError.Code == "request.not_found") {
 			return
 		}

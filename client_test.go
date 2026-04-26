@@ -21,6 +21,10 @@ func writeJSON(t *testing.T, writer http.ResponseWriter, status int, body any) {
 	}
 }
 
+func ptr[T any](value T) *T {
+	return &value
+}
+
 func TestClientUsesEnvSecretFallback(t *testing.T) {
 	original := os.Getenv("TRIPWIRE_SECRET_KEY")
 	defer os.Setenv("TRIPWIRE_SECRET_KEY", original)
@@ -116,17 +120,18 @@ func TestClientAppliesBaseURLTimeoutAndHeaders(t *testing.T) {
 	}
 }
 
-func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
+func TestSessionsFingerprintsOrganizationsAndAPIKeys(t *testing.T) {
 	sessionList := loadFixture[resourceListEnvelope[SessionSummary]](t, "api/sessions/list.json")
 	sessionDetail := loadFixture[resourceEnvelope[SessionDetail]](t, "api/sessions/detail.json")
 	fingerprintList := loadFixture[resourceListEnvelope[VisitorFingerprintSummary]](t, "api/fingerprints/list.json")
 	fingerprintDetail := loadFixture[resourceEnvelope[VisitorFingerprintDetail]](t, "api/fingerprints/detail.json")
-	teamGet := loadFixture[resourceEnvelope[Team]](t, "api/teams/team.json")
-	teamCreate := loadFixture[resourceEnvelope[Team]](t, "api/teams/team-create.json")
-	teamUpdate := loadFixture[resourceEnvelope[Team]](t, "api/teams/team-update.json")
-	apiKeyCreate := loadFixture[resourceEnvelope[IssuedAPIKey]](t, "api/teams/api-key-create.json")
-	apiKeyList := loadFixture[resourceListEnvelope[APIKey]](t, "api/teams/api-key-list.json")
-	apiKeyRotate := loadFixture[resourceEnvelope[IssuedAPIKey]](t, "api/teams/api-key-rotate.json")
+	organizationGet := loadFixture[resourceEnvelope[Organization]](t, "api/organizations/organization.json")
+	organizationCreate := loadFixture[resourceEnvelope[Organization]](t, "api/organizations/organization-create.json")
+	organizationUpdate := loadFixture[resourceEnvelope[Organization]](t, "api/organizations/organization-update.json")
+	apiKeyCreate := loadFixture[resourceEnvelope[IssuedAPIKey]](t, "api/organizations/api-key-create.json")
+	apiKeyList := loadFixture[resourceListEnvelope[APIKey]](t, "api/organizations/api-key-list.json")
+	apiKeyUpdate := loadFixture[resourceEnvelope[APIKey]](t, "api/organizations/api-key-update.json")
+	apiKeyRotate := loadFixture[resourceEnvelope[IssuedAPIKey]](t, "api/organizations/api-key-rotate.json")
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch {
@@ -164,20 +169,22 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 			writeJSON(t, writer, http.StatusOK, fingerprintList)
 		case request.URL.Path == "/v1/fingerprints/vid_456789abcdefghjkmnpqrstvwx":
 			writeJSON(t, writer, http.StatusOK, fingerprintDetail)
-		case request.URL.Path == "/v1/teams" && request.Method == http.MethodPost:
-			writeJSON(t, writer, http.StatusCreated, teamCreate)
-		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy" && request.Method == http.MethodGet:
-			writeJSON(t, writer, http.StatusOK, teamGet)
-		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy" && request.Method == http.MethodPatch:
-			writeJSON(t, writer, http.StatusOK, teamUpdate)
-		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys" && request.Method == http.MethodPost:
+		case request.URL.Path == "/v1/organizations" && request.Method == http.MethodPost:
+			writeJSON(t, writer, http.StatusCreated, organizationCreate)
+		case request.URL.Path == "/v1/organizations/org_56789abcdefghjkmnpqrstvwxy" && request.Method == http.MethodGet:
+			writeJSON(t, writer, http.StatusOK, organizationGet)
+		case request.URL.Path == "/v1/organizations/org_56789abcdefghjkmnpqrstvwxy" && request.Method == http.MethodPatch:
+			writeJSON(t, writer, http.StatusOK, organizationUpdate)
+		case request.URL.Path == "/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys" && request.Method == http.MethodPost:
 			writeJSON(t, writer, http.StatusCreated, apiKeyCreate)
-		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys" && request.Method == http.MethodGet:
+		case request.URL.Path == "/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys" && request.Method == http.MethodGet:
 			writeJSON(t, writer, http.StatusOK, apiKeyList)
-		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz/rotations":
+		case request.URL.Path == "/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz/rotations":
 			writeJSON(t, writer, http.StatusCreated, apiKeyRotate)
-		case request.URL.Path == "/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz":
-			revokeFixture := loadFixture[resourceEnvelope[APIKey]](t, "api/teams/api-key-revoke.json")
+		case request.URL.Path == "/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz" && request.Method == http.MethodPatch:
+			writeJSON(t, writer, http.StatusOK, apiKeyUpdate)
+		case request.URL.Path == "/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz":
+			revokeFixture := loadFixture[resourceEnvelope[APIKey]](t, "api/organizations/api-key-revoke.json")
 			writeJSON(t, writer, http.StatusOK, revokeFixture)
 		default:
 			t.Fatalf("unexpected request %s %s", request.Method, request.URL.Path)
@@ -221,33 +228,114 @@ func TestSessionsFingerprintsTeamsAndAPIKeys(t *testing.T) {
 		t.Fatalf("unexpected fingerprint detail %#v err=%v", fingerprint, err)
 	}
 
-	team, err := client.Teams.Get(context.Background(), "team_56789abcdefghjkmnpqrstvwxy")
-	if err != nil || team.ID != "team_56789abcdefghjkmnpqrstvwxy" {
-		t.Fatalf("unexpected team %#v err=%v", team, err)
+	organization, err := client.Organizations.Get(context.Background(), "org_56789abcdefghjkmnpqrstvwxy")
+	if err != nil || organization.ID != "org_56789abcdefghjkmnpqrstvwxy" {
+		t.Fatalf("unexpected organization %#v err=%v", organization, err)
 	}
-	createdTeam, err := client.Teams.Create(context.Background(), CreateTeamParams{Name: "Example Team", Slug: "example-team"})
-	if err != nil || createdTeam.ID != "team_56789abcdefghjkmnpqrstvwxy" {
-		t.Fatalf("unexpected created team %#v err=%v", createdTeam, err)
+	createdOrganization, err := client.Organizations.Create(context.Background(), CreateOrganizationParams{Name: "Example Organization", Slug: "example-organization"})
+	if err != nil || createdOrganization.ID != "org_56789abcdefghjkmnpqrstvwxy" {
+		t.Fatalf("unexpected created organization %#v err=%v", createdOrganization, err)
 	}
-	updatedTeam, err := client.Teams.Update(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", UpdateTeamParams{Name: "Updated Example Team"})
-	if err != nil || updatedTeam.Name != "Example Team" {
-		t.Fatalf("unexpected updated team %#v err=%v", updatedTeam, err)
+	updatedOrganization, err := client.Organizations.Update(context.Background(), "org_56789abcdefghjkmnpqrstvwxy", UpdateOrganizationParams{Name: "Updated Example Organization"})
+	if err != nil || updatedOrganization.Name != "Example Organization" {
+		t.Fatalf("unexpected updated organization %#v err=%v", updatedOrganization, err)
 	}
-	createdKey, err := client.Teams.APIKeys.Create(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", CreateAPIKeyParams{Name: "Production"})
-	if err != nil || createdKey.SecretKey != "sk_live_example" {
+	createdKey, err := client.Organizations.APIKeys.Create(context.Background(), "org_56789abcdefghjkmnpqrstvwxy", CreateAPIKeyParams{Name: "Production Backend"})
+	if err != nil || createdKey.RevealedKey != "sk_live_[example_secret_key]" {
 		t.Fatalf("unexpected created api key %#v err=%v", createdKey, err)
 	}
-	keys, err := client.Teams.APIKeys.List(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", APIKeyListParams{})
+	keys, err := client.Organizations.APIKeys.List(context.Background(), "org_56789abcdefghjkmnpqrstvwxy", APIKeyListParams{})
 	if err != nil || len(keys.Items) != 1 {
 		t.Fatalf("unexpected api key list %#v err=%v", keys, err)
 	}
-	revokedKey, err := client.Teams.APIKeys.Revoke(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")
+	updatedKey, err := client.Organizations.APIKeys.Update(context.Background(), "org_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz", UpdateAPIKeyParams{Name: "Updated Web App"})
+	if err != nil || updatedKey.Name != "Updated Web App" {
+		t.Fatalf("unexpected updated api key %#v err=%v", updatedKey, err)
+	}
+	revokedKey, err := client.Organizations.APIKeys.Revoke(context.Background(), "org_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")
 	if err != nil || revokedKey.ID != "key_6789abcdefghjkmnpqrstvwxyz" {
 		t.Fatalf("unexpected revoked api key %#v err=%v", revokedKey, err)
 	}
-	rotatedKey, err := client.Teams.APIKeys.Rotate(context.Background(), "team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")
-	if err != nil || rotatedKey.SecretKey != "sk_live_rotated" {
+	rotatedKey, err := client.Organizations.APIKeys.Rotate(context.Background(), "org_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")
+	if err != nil || rotatedKey.RevealedKey != "sk_live_[rotated_example_secret_key]" {
 		t.Fatalf("unexpected rotated api key %#v err=%v", rotatedKey, err)
+	}
+}
+
+func TestWebhooksUseEventHistoryEndpoints(t *testing.T) {
+	delivery := WebhookDelivery{
+		Object:         "webhook_delivery",
+		ID:             "wdlv_0123456789abcdef0123456789abcdef",
+		EventID:        "wevt_0123456789abcdef0123456789abcdef",
+		EndpointID:     "we_0123456789abcdef0123456789abcdef",
+		EventType:      "session.fingerprint.calculated",
+		Status:         "succeeded",
+		Attempts:       1,
+		ResponseStatus: ptr(200),
+		ResponseBody:   ptr("{}"),
+		CreatedAt:      "2026-03-24T20:00:00.000Z",
+		UpdatedAt:      "2026-03-24T20:00:05.000Z",
+	}
+	event := Event{
+		Object:            "event",
+		ID:                "wevt_0123456789abcdef0123456789abcdef",
+		Type:              "session.fingerprint.calculated",
+		Subject:           EventSubject{Type: "session", ID: "sid_0123456789abcdefghjkmnpqrs"},
+		Data:              map[string]any{"source": "waitForFingerprint"},
+		WebhookDeliveries: []WebhookDelivery{delivery},
+		CreatedAt:         "2026-03-24T20:00:00.000Z",
+	}
+	listResponse := resourceListEnvelope[Event]{
+		Data:       []Event{event},
+		Pagination: pagination{Limit: 25, HasMore: false},
+		Meta:       meta{RequestID: "req_0123456789abcdef0123456789abcdef"},
+	}
+	detailResponse := resourceEnvelope[Event]{
+		Data: event,
+		Meta: meta{RequestID: "req_0123456789abcdef0123456789abcdef"},
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if got := request.Header.Get("Authorization"); got != "Bearer sk_live_test" {
+			t.Fatalf("unexpected auth header %q", got)
+		}
+		switch request.URL.Path {
+		case "/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/events":
+			if got := request.URL.Query().Get("endpoint_id"); got != "we_0123456789abcdef0123456789abcdef" {
+				t.Fatalf("unexpected endpoint_id %q", got)
+			}
+			if got := request.URL.Query().Get("type"); got != "session.fingerprint.calculated" {
+				t.Fatalf("unexpected type %q", got)
+			}
+			writeJSON(t, writer, http.StatusOK, listResponse)
+		case "/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/events/wevt_0123456789abcdef0123456789abcdef":
+			writeJSON(t, writer, http.StatusOK, detailResponse)
+		default:
+			t.Fatalf("unexpected request %s %s", request.Method, request.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	client, err := NewClient(WithSecretKey("sk_live_test"), WithBaseURL(server.URL), WithHTTPClient(server.Client()))
+	if err != nil {
+		t.Fatalf("new client: %v", err)
+	}
+
+	events, err := client.Webhooks.ListEvents(context.Background(), "org_56789abcdefghjkmnpqrstvwxy", EventListParams{
+		EndpointID: "we_0123456789abcdef0123456789abcdef",
+		Type:       "session.fingerprint.calculated",
+		Limit:      25,
+	})
+	if err != nil || len(events.Items) != 1 || events.Items[0].Subject.ID != "sid_0123456789abcdefghjkmnpqrs" {
+		t.Fatalf("unexpected events %#v err=%v", events, err)
+	}
+	if events.Items[0].WebhookDeliveries[0].Status != "succeeded" {
+		t.Fatalf("unexpected delivery status %q", events.Items[0].WebhookDeliveries[0].Status)
+	}
+
+	fetched, err := client.Webhooks.RetrieveEvent(context.Background(), "org_56789abcdefghjkmnpqrstvwxy", "wevt_0123456789abcdef0123456789abcdef")
+	if err != nil || fetched.Type != "session.fingerprint.calculated" {
+		t.Fatalf("unexpected event %#v err=%v", fetched, err)
 	}
 }
 
@@ -363,11 +451,11 @@ func TestGateNamespaceSupportsPublicBearerAndSecretFlows(t *testing.T) {
 		t.Fatalf("unexpected gate service detail %#v err=%v", item, err)
 	}
 	if item, err := client.Gate.Services.Create(context.Background(), CreateGateServiceParams{
-		ID:          "acme_prod",
-		Name:        "Acme Production",
-		Description: "Acme production signup flow",
-		Website:     "https://acme.example.com",
-		WebhookURL:  "https://api.acme.example.com/v1/gate/webhook",
+		ID:                "acme_prod",
+		Name:              "Acme Production",
+		Description:       "Acme production signup flow",
+		Website:           "https://acme.example.com",
+		WebhookEndpointID: "we_0123456789abcdef0123456789abcdef",
 	}); err != nil || item.ID != "acme_prod" {
 		t.Fatalf("unexpected created gate service %#v err=%v", item, err)
 	}

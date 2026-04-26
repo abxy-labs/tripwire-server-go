@@ -4,13 +4,14 @@
 ![Go 1.22+](https://img.shields.io/badge/go-1.22%2B-00ADD8?logo=go&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-The Tripwire Go library provides convenient access to the Tripwire API from Go services and applications. It includes a context-aware client for Sessions, visitor fingerprints, Teams, Team API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
+The Tripwire Go library provides convenient access to the Tripwire API from Go services and applications. It includes a context-aware client for Sessions, visitor fingerprints, Organizations, Organization API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
 
 The library also provides:
 
 - a fast configuration path using `TRIPWIRE_SECRET_KEY`
 - iterator-style helpers for cursor-based pagination
 - structured API errors and built-in sealed token verification
+- webhook endpoint management, test sends, and event delivery history
 - public, bearer-token, and secret-key auth modes for Gate flows
 - Gate delivery/webhook helpers
 
@@ -101,40 +102,63 @@ if err != nil {
 log.Println(fingerprint.ID)
 ```
 
-### Teams
+### Organizations
 
 ```go
-team, err := client.Teams.Get(context.Background(), "team_0123456789abcdefghjkmnpqrs")
+organization, err := client.Organizations.Get(context.Background(), "org_0123456789abcdefghjkmnpqrs")
 if err != nil {
   log.Fatal(err)
 }
 
-updated, err := client.Teams.Update(context.Background(), "team_0123456789abcdefghjkmnpqrs", tripwire.UpdateTeamParams{
+updated, err := client.Organizations.Update(context.Background(), "org_0123456789abcdefghjkmnpqrs", tripwire.UpdateOrganizationParams{
   Name: "New Name",
 })
 if err != nil {
   log.Fatal(err)
 }
 
-_, _ = team, updated
+_, _ = organization, updated
 ```
 
-### Team API keys
+### Organization API keys
 
 ```go
-created, err := client.Teams.APIKeys.Create(
+created, err := client.Organizations.APIKeys.Create(
   context.Background(),
-  "team_0123456789abcdefghjkmnpqrs",
-  tripwire.CreateAPIKeyParams{Name: "Production", Environment: "live"},
+  "org_0123456789abcdefghjkmnpqrs",
+  tripwire.CreateAPIKeyParams{Name: "Production", Type: "secret", Environment: "live"},
 )
 if err != nil {
   log.Fatal(err)
 }
 
-_, err = client.Teams.APIKeys.Revoke(context.Background(), "team_0123456789abcdefghjkmnpqrs", created.ID)
+_, err = client.Organizations.APIKeys.Revoke(context.Background(), "org_0123456789abcdefghjkmnpqrs", created.ID)
 if err != nil {
   log.Fatal(err)
 }
+```
+
+### Webhooks
+
+```go
+endpoint, err := client.Webhooks.CreateEndpoint(context.Background(), "org_0123456789abcdefghjkmnpqrs", tripwire.CreateWebhookEndpointParams{
+  Name:       "Production alerts",
+  URL:        "https://example.com/tripwire/webhook",
+  EventTypes: []string{"session.result.persisted", "gate.session.approved"},
+})
+if err != nil {
+  log.Fatal(err)
+}
+
+events, err := client.Webhooks.ListEvents(context.Background(), "org_0123456789abcdefghjkmnpqrs", tripwire.EventListParams{
+  EndpointID: endpoint.ID,
+  Type:       "session.result.persisted",
+})
+if err != nil {
+  log.Fatal(err)
+}
+
+log.Println(events.Items[0].WebhookDeliveries[0].Status)
 ```
 
 ### Gate APIs

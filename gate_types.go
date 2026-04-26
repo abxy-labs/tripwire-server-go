@@ -65,7 +65,7 @@ type GateManagedService struct {
 	Description       string                  `json:"description"`
 	Website           string                  `json:"website"`
 	DashboardLoginURL string                  `json:"dashboard_login_url,omitempty"`
-	WebhookURL        string                  `json:"webhook_url"`
+	WebhookEndpointID *string                 `json:"webhook_endpoint_id"`
 	EnvVars           []GateServiceEnvVar     `json:"env_vars"`
 	DocsURL           string                  `json:"docs_url"`
 	SDKs              []GateServiceSDKInstall `json:"sdks"`
@@ -82,8 +82,7 @@ type CreateGateServiceParams struct {
 	Description       string                    `json:"description"`
 	Website           string                    `json:"website"`
 	DashboardLoginURL string                    `json:"dashboard_login_url,omitempty"`
-	WebhookURL        string                    `json:"webhook_url"`
-	WebhookSecret     string                    `json:"webhook_secret,omitempty"`
+	WebhookEndpointID string                    `json:"webhook_endpoint_id"`
 	EnvVars           []GateServiceEnvVar       `json:"env_vars,omitempty"`
 	DocsURL           string                    `json:"docs_url,omitempty"`
 	SDKs              []GateServiceSDKInstall   `json:"sdks,omitempty"`
@@ -97,8 +96,7 @@ type UpdateGateServiceParams struct {
 	Description       string                    `json:"description,omitempty"`
 	Website           string                    `json:"website,omitempty"`
 	DashboardLoginURL string                    `json:"dashboard_login_url,omitempty"`
-	WebhookURL        string                    `json:"webhook_url,omitempty"`
-	WebhookSecret     string                    `json:"webhook_secret,omitempty"`
+	WebhookEndpointID string                    `json:"webhook_endpoint_id,omitempty"`
 	EnvVars           []GateServiceEnvVar       `json:"env_vars,omitempty"`
 	DocsURL           string                    `json:"docs_url,omitempty"`
 	SDKs              []GateServiceSDKInstall   `json:"sdks,omitempty"`
@@ -150,7 +148,6 @@ type GateApprovedWebhookTripwire struct {
 }
 
 type GateApprovedWebhookPayload struct {
-	Event         string                      `json:"event"`
 	ServiceID     string                      `json:"service_id"`
 	GateSessionID string                      `json:"gate_session_id"`
 	GateAccountID string                      `json:"gate_account_id"`

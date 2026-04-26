@@ -495,7 +495,7 @@ type VisitorFingerprintDetail struct {
 	Activity   VisitorFingerprintActivity   `json:"activity"`
 }
 
-type Team struct {
+type Organization struct {
 	Object    string  `json:"object"`
 	ID        string  `json:"id"`
 	Name      string  `json:"name"`
@@ -508,20 +508,25 @@ type Team struct {
 type APIKey struct {
 	Object         string   `json:"object"`
 	ID             string   `json:"id"`
-	PublicKey      string   `json:"public_key"`
+	Type           string   `json:"type"`
 	Name           string   `json:"name"`
 	Environment    string   `json:"environment"`
 	AllowedOrigins []string `json:"allowed_origins,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
 	RateLimit      *int     `json:"rate_limit,omitempty"`
 	Status         string   `json:"status"`
+	KeyPreview     string   `json:"key_preview"`
+	DisplayKey     *string  `json:"display_key,omitempty"`
+	LastUsedAt     *string  `json:"last_used_at,omitempty"`
 	CreatedAt      string   `json:"created_at"`
 	RotatedAt      *string  `json:"rotated_at,omitempty"`
 	RevokedAt      *string  `json:"revoked_at,omitempty"`
+	GraceExpiresAt *string  `json:"grace_expires_at,omitempty"`
 }
 
 type IssuedAPIKey struct {
 	APIKey
-	SecretKey string `json:"secret_key"`
+	RevealedKey string `json:"revealed_key"`
 }
 
 type VerifiedTripwireSignal struct {
@@ -575,19 +580,26 @@ type APIKeyListParams struct {
 	Cursor string
 }
 
-type CreateTeamParams struct {
+type CreateOrganizationParams struct {
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }
 
-type UpdateTeamParams struct {
+type UpdateOrganizationParams struct {
 	Name   string `json:"name,omitempty"`
 	Status string `json:"status,omitempty"`
 }
 
 type CreateAPIKeyParams struct {
 	Name           string   `json:"name,omitempty"`
+	Type           string   `json:"type,omitempty"`
 	Environment    string   `json:"environment,omitempty"`
 	AllowedOrigins []string `json:"allowed_origins,omitempty"`
-	RateLimit      *int     `json:"rate_limit,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
+}
+
+type UpdateAPIKeyParams struct {
+	Name           string   `json:"name,omitempty"`
+	AllowedOrigins []string `json:"allowed_origins,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
 }

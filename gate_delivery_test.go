@@ -63,6 +63,30 @@ func TestGateWebhookAndEnvFixtures(t *testing.T) {
 	}
 	loadFixtureJSON(t, "spec/fixtures/gate-delivery/webhook-signature.json", &signatureFixture)
 
+	envelope, parsedPayload, err := ParseWebhookEvent([]byte(signatureFixture.RawBody))
+	if err != nil {
+		t.Fatalf("parse webhook event: %v", err)
+	}
+	if envelope.Type != "gate.session.approved" {
+		t.Fatalf("webhook event type mismatch: got %s", envelope.Type)
+	}
+	gatePayload, ok := parsedPayload.(GateApprovedWebhookPayload)
+	if !ok {
+		t.Fatalf("parsed webhook payload type mismatch: got %T", parsedPayload)
+	}
+	if gatePayload.ServiceID != payload.ServiceID || gatePayload.GateSessionID != payload.GateSessionID {
+		t.Fatalf("parsed webhook payload mismatch: got %s/%s", gatePayload.ServiceID, gatePayload.GateSessionID)
+	}
+	if _, _, err := VerifyAndParseWebhookEvent(VerifyGateWebhookSignatureInput{
+		Secret:     signatureFixture.Secret,
+		Timestamp:  signatureFixture.Timestamp,
+		RawBody:    signatureFixture.RawBody,
+		Signature:  signatureFixture.Signature,
+		NowSeconds: signatureFixture.NowSeconds,
+	}); err != nil {
+		t.Fatalf("verify and parse webhook event: %v", err)
+	}
+
 	if !VerifyGateWebhookSignature(VerifyGateWebhookSignatureInput{
 		Secret:     signatureFixture.Secret,
 		Timestamp:  signatureFixture.Timestamp,

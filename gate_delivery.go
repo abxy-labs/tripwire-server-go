@@ -195,9 +195,6 @@ func CreateGateApprovedWebhookResponse(input GateDeliveryHelperInput) (*GateEncr
 }
 
 func ValidateGateApprovedWebhookPayload(value GateApprovedWebhookPayload) (*GateApprovedWebhookPayload, error) {
-	if value.Event != "gate.session.approved" {
-		return nil, errors.New("event must be gate.session.approved")
-	}
 	if value.ServiceID == "" {
 		return nil, errors.New("service_id is required")
 	}
@@ -252,6 +249,66 @@ func VerifyGateWebhookSignature(input VerifyGateWebhookSignatureInput) bool {
 		[]byte(fmt.Sprintf("%x", expected.Sum(nil))),
 		[]byte(input.Signature),
 	) == 1
+}
+
+type WebhookEventEnvelope struct {
+	ID      string          `json:"id"`
+	Object  string          `json:"object"`
+	Type    string          `json:"type"`
+	Created string          `json:"created"`
+	Data    json.RawMessage `json:"data"`
+}
+
+func ParseWebhookEvent(rawBody []byte) (*WebhookEventEnvelope, any, error) {
+	var envelope WebhookEventEnvelope
+	if err := json.Unmarshal(rawBody, &envelope); err != nil {
+		return nil, nil, err
+	}
+	if envelope.Object != "webhook_event" {
+		return nil, nil, errors.New("webhook event object must be webhook_event")
+	}
+	if envelope.ID == "" {
+		return nil, nil, errors.New("webhook event id is required")
+	}
+	if envelope.Type == "" {
+		return nil, nil, errors.New("webhook event type is required")
+	}
+	if envelope.Created == "" {
+		return nil, nil, errors.New("webhook event created timestamp is required")
+	}
+	if len(envelope.Data) == 0 {
+		return nil, nil, errors.New("webhook event data is required")
+	}
+	if envelope.Type == "gate.session.approved" {
+		var rawPayload map[string]any
+		if err := json.Unmarshal(envelope.Data, &rawPayload); err != nil {
+			return nil, nil, err
+		}
+		if _, ok := rawPayload["event"]; ok {
+			return nil, nil, errors.New("webhook payload must not include event; use the webhook event envelope type")
+		}
+		var payload GateApprovedWebhookPayload
+		if err := json.Unmarshal(envelope.Data, &payload); err != nil {
+			return nil, nil, err
+		}
+		validated, err := ValidateGateApprovedWebhookPayload(payload)
+		if err != nil {
+			return nil, nil, err
+		}
+		return &envelope, *validated, nil
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(envelope.Data, &payload); err != nil {
+		return nil, nil, err
+	}
+	return &envelope, payload, nil
+}
+
+func VerifyAndParseWebhookEvent(input VerifyGateWebhookSignatureInput) (*WebhookEventEnvelope, any, error) {
+	if !VerifyGateWebhookSignature(input) {
+		return nil, nil, errors.New("invalid Tripwire webhook signature")
+	}
+	return ParseWebhookEvent([]byte(input.RawBody))
 }
 
 func EncryptGateDeliveryPayload(delivery GateDeliveryRequest, payload GateDeliveryPayload) (*GateDeliveryEnvelope, error) {
