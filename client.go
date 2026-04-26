@@ -64,11 +64,11 @@ type Client struct {
 	httpClient *http.Client
 	userAgent  string
 
-	Sessions     *SessionsService
-	Fingerprints *FingerprintsService
-	Teams        *TeamsService
-	Gate         *GateService
-	Webhooks     *WebhooksService
+	Sessions      *SessionsService
+	Fingerprints  *FingerprintsService
+	Organizations *OrganizationsService
+	Gate          *GateService
+	Webhooks      *WebhooksService
 }
 
 func NewClient(options ...Option) (*Client, error) {
@@ -99,8 +99,8 @@ func NewClient(options ...Option) (*Client, error) {
 	}
 	client.Sessions = &SessionsService{client: client}
 	client.Fingerprints = &FingerprintsService{client: client}
-	client.Teams = &TeamsService{client: client}
-	client.Teams.APIKeys = &APIKeysService{client: client}
+	client.Organizations = &OrganizationsService{client: client}
+	client.Organizations.APIKeys = &APIKeysService{client: client}
 	client.Gate = &GateService{client: client}
 	client.Gate.Registry = &GateRegistryService{client: client}
 	client.Gate.Services = &GateManagedServicesService{client: client}
@@ -352,34 +352,34 @@ func (s *FingerprintsService) Iter(ctx context.Context, params FingerprintListPa
 	}
 }
 
-type TeamsService struct {
+type OrganizationsService struct {
 	client  *Client
 	APIKeys *APIKeysService
 }
 
-func (s *TeamsService) Create(ctx context.Context, params CreateTeamParams) (Team, error) {
-	var envelope resourceEnvelope[Team]
-	err := s.client.doJSON(ctx, http.MethodPost, "/v1/teams", nil, params, &envelope)
+func (s *OrganizationsService) Create(ctx context.Context, params CreateOrganizationParams) (Organization, error) {
+	var envelope resourceEnvelope[Organization]
+	err := s.client.doJSON(ctx, http.MethodPost, "/v1/organizations", nil, params, &envelope)
 	if err != nil {
-		return Team{}, err
+		return Organization{}, err
 	}
 	return envelope.Data, nil
 }
 
-func (s *TeamsService) Get(ctx context.Context, teamID string) (Team, error) {
-	var envelope resourceEnvelope[Team]
-	err := s.client.doJSON(ctx, http.MethodGet, "/v1/teams/"+url.PathEscape(teamID), nil, nil, &envelope)
+func (s *OrganizationsService) Get(ctx context.Context, organizationID string) (Organization, error) {
+	var envelope resourceEnvelope[Organization]
+	err := s.client.doJSON(ctx, http.MethodGet, "/v1/organizations/"+url.PathEscape(organizationID), nil, nil, &envelope)
 	if err != nil {
-		return Team{}, err
+		return Organization{}, err
 	}
 	return envelope.Data, nil
 }
 
-func (s *TeamsService) Update(ctx context.Context, teamID string, params UpdateTeamParams) (Team, error) {
-	var envelope resourceEnvelope[Team]
-	err := s.client.doJSON(ctx, http.MethodPatch, "/v1/teams/"+url.PathEscape(teamID), nil, params, &envelope)
+func (s *OrganizationsService) Update(ctx context.Context, organizationID string, params UpdateOrganizationParams) (Organization, error) {
+	var envelope resourceEnvelope[Organization]
+	err := s.client.doJSON(ctx, http.MethodPatch, "/v1/organizations/"+url.PathEscape(organizationID), nil, params, &envelope)
 	if err != nil {
-		return Team{}, err
+		return Organization{}, err
 	}
 	return envelope.Data, nil
 }
@@ -388,18 +388,18 @@ type APIKeysService struct {
 	client *Client
 }
 
-func (s *APIKeysService) Create(ctx context.Context, teamID string, params CreateAPIKeyParams) (IssuedAPIKey, error) {
+func (s *APIKeysService) Create(ctx context.Context, organizationID string, params CreateAPIKeyParams) (IssuedAPIKey, error) {
 	var envelope resourceEnvelope[IssuedAPIKey]
-	err := s.client.doJSON(ctx, http.MethodPost, "/v1/teams/"+url.PathEscape(teamID)+"/api-keys", nil, params, &envelope)
+	err := s.client.doJSON(ctx, http.MethodPost, "/v1/organizations/"+url.PathEscape(organizationID)+"/api-keys", nil, params, &envelope)
 	if err != nil {
 		return IssuedAPIKey{}, err
 	}
 	return envelope.Data, nil
 }
 
-func (s *APIKeysService) List(ctx context.Context, teamID string, params APIKeyListParams) (ListResult[APIKey], error) {
+func (s *APIKeysService) List(ctx context.Context, organizationID string, params APIKeyListParams) (ListResult[APIKey], error) {
 	var envelope resourceListEnvelope[APIKey]
-	err := s.client.doJSON(ctx, http.MethodGet, "/v1/teams/"+url.PathEscape(teamID)+"/api-keys", map[string]string{
+	err := s.client.doJSON(ctx, http.MethodGet, "/v1/organizations/"+url.PathEscape(organizationID)+"/api-keys", map[string]string{
 		"limit":  intToString(params.Limit),
 		"cursor": params.Cursor,
 	}, nil, &envelope)
@@ -409,18 +409,27 @@ func (s *APIKeysService) List(ctx context.Context, teamID string, params APIKeyL
 	return normalizeList(envelope), nil
 }
 
-func (s *APIKeysService) Revoke(ctx context.Context, teamID string, keyID string) (APIKey, error) {
+func (s *APIKeysService) Update(ctx context.Context, organizationID string, keyID string, params UpdateAPIKeyParams) (APIKey, error) {
 	var envelope resourceEnvelope[APIKey]
-	err := s.client.doJSON(ctx, http.MethodDelete, "/v1/teams/"+url.PathEscape(teamID)+"/api-keys/"+url.PathEscape(keyID), nil, nil, &envelope)
+	err := s.client.doJSON(ctx, http.MethodPatch, "/v1/organizations/"+url.PathEscape(organizationID)+"/api-keys/"+url.PathEscape(keyID), nil, params, &envelope)
 	if err != nil {
 		return APIKey{}, err
 	}
 	return envelope.Data, nil
 }
 
-func (s *APIKeysService) Rotate(ctx context.Context, teamID string, keyID string) (IssuedAPIKey, error) {
+func (s *APIKeysService) Revoke(ctx context.Context, organizationID string, keyID string) (APIKey, error) {
+	var envelope resourceEnvelope[APIKey]
+	err := s.client.doJSON(ctx, http.MethodDelete, "/v1/organizations/"+url.PathEscape(organizationID)+"/api-keys/"+url.PathEscape(keyID), nil, nil, &envelope)
+	if err != nil {
+		return APIKey{}, err
+	}
+	return envelope.Data, nil
+}
+
+func (s *APIKeysService) Rotate(ctx context.Context, organizationID string, keyID string) (IssuedAPIKey, error) {
 	var envelope resourceEnvelope[IssuedAPIKey]
-	err := s.client.doJSON(ctx, http.MethodPost, "/v1/teams/"+url.PathEscape(teamID)+"/api-keys/"+url.PathEscape(keyID)+"/rotations", nil, nil, &envelope)
+	err := s.client.doJSON(ctx, http.MethodPost, "/v1/organizations/"+url.PathEscape(organizationID)+"/api-keys/"+url.PathEscape(keyID)+"/rotations", nil, nil, &envelope)
 	if err != nil {
 		return IssuedAPIKey{}, err
 	}

@@ -40,6 +40,21 @@ type WebhookTest struct {
 	LatestDelivery *WebhookDelivery `json:"latest_delivery"`
 }
 
+type EventSubject struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+}
+
+type Event struct {
+	Object            string            `json:"object"`
+	ID                string            `json:"id"`
+	Type              string            `json:"type"`
+	Subject           EventSubject      `json:"subject"`
+	Data              map[string]any    `json:"data"`
+	WebhookDeliveries []WebhookDelivery `json:"webhook_deliveries"`
+	CreatedAt         string            `json:"created_at"`
+}
+
 type CreateWebhookEndpointParams struct {
 	Name       string   `json:"name"`
 	URL        string   `json:"url"`
@@ -53,8 +68,9 @@ type UpdateWebhookEndpointParams struct {
 	EventTypes []string `json:"event_types,omitempty"`
 }
 
-type WebhookDeliveryListParams struct {
+type EventListParams struct {
 	EndpointID string
+	Type       string
 	Limit      int
 }
 
@@ -116,14 +132,24 @@ func (s *WebhooksService) SendTest(ctx context.Context, organizationID string, e
 	return envelope.Data, nil
 }
 
-func (s *WebhooksService) ListDeliveries(ctx context.Context, organizationID string, params WebhookDeliveryListParams) (ListResult[WebhookDelivery], error) {
-	var envelope resourceListEnvelope[WebhookDelivery]
-	err := s.client.doJSON(ctx, http.MethodGet, "/v1/organizations/"+url.PathEscape(organizationID)+"/webhooks/deliveries", map[string]string{
+func (s *WebhooksService) ListEvents(ctx context.Context, organizationID string, params EventListParams) (ListResult[Event], error) {
+	var envelope resourceListEnvelope[Event]
+	err := s.client.doJSON(ctx, http.MethodGet, "/v1/organizations/"+url.PathEscape(organizationID)+"/events", map[string]string{
 		"endpoint_id": params.EndpointID,
+		"type":        params.Type,
 		"limit":       intToString(params.Limit),
 	}, nil, &envelope)
 	if err != nil {
-		return ListResult[WebhookDelivery]{}, err
+		return ListResult[Event]{}, err
 	}
 	return normalizeList(envelope), nil
+}
+
+func (s *WebhooksService) RetrieveEvent(ctx context.Context, organizationID string, eventID string) (Event, error) {
+	var envelope resourceEnvelope[Event]
+	err := s.client.doJSON(ctx, http.MethodGet, "/v1/organizations/"+url.PathEscape(organizationID)+"/events/"+url.PathEscape(eventID), nil, nil, &envelope)
+	if err != nil {
+		return Event{}, err
+	}
+	return envelope.Data, nil
 }

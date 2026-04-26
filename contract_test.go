@@ -3,7 +3,6 @@ package tripwire
 import (
 	"encoding/json"
 	"os"
-	"reflect"
 	"testing"
 )
 
@@ -51,6 +50,16 @@ func nestedStringSlice(t *testing.T, value any, path string) []string {
 	return result
 }
 
+func nestedSlice(t *testing.T, value any, path string) []any {
+	t.Helper()
+
+	items, ok := value.([]any)
+	if !ok {
+		t.Fatalf("%s is not an array", path)
+	}
+	return items
+}
+
 func TestOnlySupportedPublicPathsAreExposed(t *testing.T) {
 	spec := readContractSpec(t)
 	paths := nestedMap(t, spec["paths"], "paths")
@@ -68,13 +77,19 @@ func TestOnlySupportedPublicPathsAreExposed(t *testing.T) {
 		"/v1/gate/sessions",
 		"/v1/gate/sessions/{gateSessionId}",
 		"/v1/gate/sessions/{gateSessionId}/ack",
+		"/v1/organizations",
+		"/v1/organizations/{organizationId}",
+		"/v1/organizations/{organizationId}/api-keys",
+		"/v1/organizations/{organizationId}/api-keys/{keyId}",
+		"/v1/organizations/{organizationId}/api-keys/{keyId}/rotations",
+		"/v1/organizations/{organizationId}/events",
+		"/v1/organizations/{organizationId}/events/{eventId}",
+		"/v1/organizations/{organizationId}/webhooks/endpoints",
+		"/v1/organizations/{organizationId}/webhooks/endpoints/{endpointId}",
+		"/v1/organizations/{organizationId}/webhooks/endpoints/{endpointId}/rotations",
+		"/v1/organizations/{organizationId}/webhooks/endpoints/{endpointId}/test",
 		"/v1/sessions",
 		"/v1/sessions/{sessionId}",
-		"/v1/teams",
-		"/v1/teams/{teamId}",
-		"/v1/teams/{teamId}/api-keys",
-		"/v1/teams/{teamId}/api-keys/{keyId}",
-		"/v1/teams/{teamId}/api-keys/{keyId}/rotations",
 	}
 	if len(paths) != len(expected) {
 		t.Fatalf("unexpected path count %d", len(paths))
@@ -106,13 +121,14 @@ func TestExpectedSuccessFixturesExist(t *testing.T) {
 		"spec/fixtures/api/gate/login-session-consume.json",
 		"spec/fixtures/api/gate/agent-token-verify.json",
 		"spec/fixtures/api/gate/agent-token-revoke.json",
-		"spec/fixtures/api/teams/team.json",
-		"spec/fixtures/api/teams/team-create.json",
-		"spec/fixtures/api/teams/team-update.json",
-		"spec/fixtures/api/teams/api-key-create.json",
-		"spec/fixtures/api/teams/api-key-list.json",
-		"spec/fixtures/api/teams/api-key-rotate.json",
-		"spec/fixtures/api/teams/api-key-revoke.json",
+		"spec/fixtures/api/organizations/organization.json",
+		"spec/fixtures/api/organizations/organization-create.json",
+		"spec/fixtures/api/organizations/organization-update.json",
+		"spec/fixtures/api/organizations/api-key-create.json",
+		"spec/fixtures/api/organizations/api-key-list.json",
+		"spec/fixtures/api/organizations/api-key-update.json",
+		"spec/fixtures/api/organizations/api-key-rotate.json",
+		"spec/fixtures/api/organizations/api-key-revoke.json",
 	}
 	for _, path := range paths {
 		if _, err := os.Stat(path); err != nil {
@@ -133,9 +149,9 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 	if fingerprintID["pattern"] != "^vid_[0123456789abcdefghjkmnpqrstvwxyz]{26}$" {
 		t.Fatalf("unexpected FingerprintId pattern: %v", fingerprintID["pattern"])
 	}
-	teamID := nestedMap(t, schemas["TeamId"], "TeamId")
-	if teamID["pattern"] != "^team_[0123456789abcdefghjkmnpqrstvwxyz]{26}$" {
-		t.Fatalf("unexpected TeamId pattern: %v", teamID["pattern"])
+	organizationID := nestedMap(t, schemas["OrganizationId"], "OrganizationId")
+	if organizationID["pattern"] != "^org_[0123456789abcdefghjkmnpqrstvwxyz]{26}$" {
+		t.Fatalf("unexpected OrganizationId pattern: %v", organizationID["pattern"])
 	}
 	apiKeyID := nestedMap(t, schemas["ApiKeyId"], "ApiKeyId")
 	if apiKeyID["pattern"] != "^key_[0123456789abcdefghjkmnpqrstvwxyz]{26}$" {
@@ -146,9 +162,9 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 	if nestedMap(t, sessionSummaryID, "SessionSummary.properties.id")["$ref"] != "#/components/schemas/SessionId" {
 		t.Fatalf("SessionSummary.id should reference SessionId")
 	}
-	teamStatus := nestedMap(t, nestedMap(t, schemas["Team"], "Team")["properties"], "Team.properties")["status"]
-	if nestedMap(t, teamStatus, "Team.properties.status")["$ref"] != "#/components/schemas/TeamStatus" {
-		t.Fatalf("Team.status should reference TeamStatus")
+	teamStatus := nestedMap(t, nestedMap(t, schemas["Organization"], "Organization")["properties"], "Organization.properties")["status"]
+	if nestedMap(t, teamStatus, "Organization.properties.status")["$ref"] != "#/components/schemas/OrganizationStatus" {
+		t.Fatalf("Organization.status should reference OrganizationStatus")
 	}
 	apiKeyStatus := nestedMap(t, nestedMap(t, schemas["ApiKey"], "ApiKey")["properties"], "ApiKey.properties")["status"]
 	if nestedMap(t, apiKeyStatus, "ApiKey.properties.status")["$ref"] != "#/components/schemas/ApiKeyStatus" {
@@ -162,10 +178,10 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 		t.Fatalf("CollectBatchResponse should be pruned from the public SDK spec")
 	}
 
-	if got := nestedStringSlice(t, nestedMap(t, schemas["TeamStatus"], "TeamStatus")["enum"], "TeamStatus.enum"); len(got) != 3 || got[0] != "active" || got[1] != "suspended" || got[2] != "deleted" {
-		t.Fatalf("unexpected TeamStatus enum: %v", got)
+	if got := nestedStringSlice(t, nestedMap(t, schemas["OrganizationStatus"], "OrganizationStatus")["enum"], "OrganizationStatus.enum"); len(got) != 3 || got[0] != "active" || got[1] != "suspended" || got[2] != "deleted" {
+		t.Fatalf("unexpected OrganizationStatus enum: %v", got)
 	}
-	if got := nestedStringSlice(t, nestedMap(t, schemas["ApiKeyStatus"], "ApiKeyStatus")["enum"], "ApiKeyStatus.enum"); len(got) != 3 || got[0] != "active" || got[1] != "revoked" || got[2] != "rotated" {
+	if got := nestedStringSlice(t, nestedMap(t, schemas["ApiKeyStatus"], "ApiKeyStatus")["enum"], "ApiKeyStatus.enum"); len(got) != 3 || got[0] != "active" || got[1] != "rotating" || got[2] != "revoked" {
 		t.Fatalf("unexpected ApiKeyStatus enum: %v", got)
 	}
 
@@ -179,25 +195,20 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 			t.Fatalf("SessionDetail.required should include %s", field)
 		}
 	}
-	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["request"]; !reflect.DeepEqual(got, map[string]any{"$ref": "#/components/schemas/SessionDetailRequest"}) {
+	sessionDetailProperties := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")
+	if got := nestedMap(t, sessionDetailProperties["request"], "SessionDetail.properties.request")["$ref"]; got != "#/components/schemas/SessionDetailRequest" {
 		t.Fatalf("SessionDetail.request should reference SessionDetailRequest, got %#v", got)
 	}
-	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["client_telemetry"]; !reflect.DeepEqual(got, map[string]any{"$ref": "#/components/schemas/SessionClientTelemetry"}) {
+	if got := nestedMap(t, sessionDetailProperties["client_telemetry"], "SessionDetail.properties.client_telemetry")["$ref"]; got != "#/components/schemas/SessionClientTelemetry" {
 		t.Fatalf("SessionDetail.client_telemetry should reference SessionClientTelemetry, got %#v", got)
 	}
-	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["automation"]; !reflect.DeepEqual(got, map[string]any{
-		"anyOf": []any{
-			map[string]any{"$ref": "#/components/schemas/SessionAutomation"},
-			map[string]any{"type": "null"},
-		},
-	}) {
-		t.Fatalf("SessionDetail.automation should allow SessionAutomation or null, got %#v", got)
+	automationAnyOf := nestedSlice(t, nestedMap(t, sessionDetailProperties["automation"], "SessionDetail.properties.automation")["anyOf"], "SessionDetail.properties.automation.anyOf")
+	if nestedMap(t, automationAnyOf[0], "SessionDetail.properties.automation.anyOf.0")["$ref"] != "#/components/schemas/SessionAutomation" || nestedMap(t, automationAnyOf[1], "SessionDetail.properties.automation.anyOf.1")["type"] != "null" {
+		t.Fatalf("SessionDetail.automation should allow SessionAutomation or null, got %#v", automationAnyOf)
 	}
-	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["signals_fired"]; !reflect.DeepEqual(got, map[string]any{
-		"type":  "array",
-		"items": map[string]any{"$ref": "#/components/schemas/SessionSignalFired"},
-	}) {
-		t.Fatalf("SessionDetail.signals_fired should reference SessionSignalFired items, got %#v", got)
+	signalsFired := nestedMap(t, sessionDetailProperties["signals_fired"], "SessionDetail.properties.signals_fired")
+	if signalsFired["type"] != "array" || nestedMap(t, signalsFired["items"], "SessionDetail.properties.signals_fired.items")["$ref"] != "#/components/schemas/SessionSignalFired" {
+		t.Fatalf("SessionDetail.signals_fired should reference SessionSignalFired items, got %#v", signalsFired)
 	}
 	if got := nestedMap(t, nestedMap(t, schemas["SessionSignalFired"], "SessionSignalFired")["properties"], "SessionSignalFired.properties")["signal"]; nestedMap(t, got, "SessionSignalFired.properties.signal")["type"] != "string" {
 		t.Fatalf("SessionSignalFired.signal should be a string, got %#v", got)
@@ -214,10 +225,18 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 	for _, item := range apiKeyRequired {
 		requiredSet[item] = true
 	}
-	for _, field := range []string{"allowed_origins", "rate_limit", "rotated_at", "revoked_at"} {
+	for _, field := range []string{"type", "allowed_origins", "scopes", "key_preview", "last_used_at", "rate_limit", "rotated_at", "revoked_at", "grace_expires_at"} {
 		if !requiredSet[field] {
 			t.Fatalf("ApiKey.required should include %s", field)
 		}
+	}
+	issuedAPIKeyRequired := nestedStringSlice(t, nestedMap(t, schemas["IssuedApiKey"], "IssuedApiKey")["required"], "IssuedApiKey.required")
+	issuedRequiredSet := map[string]bool{}
+	for _, item := range issuedAPIKeyRequired {
+		issuedRequiredSet[item] = true
+	}
+	if !issuedRequiredSet["revealed_key"] {
+		t.Fatalf("IssuedApiKey.required should include revealed_key")
 	}
 }
 
@@ -239,8 +258,9 @@ func TestPublicOperationsHaveStableIDsAndTags(t *testing.T) {
 
 	assertOperation("/v1/sessions", "get", "listSessions", "Sessions")
 	assertOperation("/v1/fingerprints/{visitorId}", "get", "getVisitorFingerprint", "Visitor fingerprints")
-	assertOperation("/v1/teams/{teamId}", "patch", "updateTeam", "Teams")
-	assertOperation("/v1/teams/{teamId}/api-keys/{keyId}/rotations", "post", "rotateTeamApiKey", "API Keys")
+	assertOperation("/v1/organizations/{organizationId}", "patch", "updateOrganization", "Organizations")
+	assertOperation("/v1/organizations/{organizationId}/api-keys/{keyId}", "patch", "updateOrganizationApiKey", "API Keys")
+	assertOperation("/v1/organizations/{organizationId}/api-keys/{keyId}/rotations", "post", "rotateOrganizationApiKey", "API Keys")
 	assertOperation("/v1/gate/services", "post", "createManagedGateService", "Gate")
 	assertOperation("/v1/gate/sessions/{gateSessionId}", "get", "pollGateSession", "Gate")
 	assertOperation("/v1/gate/agent-tokens/revoke", "post", "revokeGateAgentToken", "Gate")
