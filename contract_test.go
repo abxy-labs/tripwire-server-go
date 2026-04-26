@@ -3,6 +3,7 @@ package tripwire
 import (
 	"encoding/json"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -58,6 +59,28 @@ func nestedSlice(t *testing.T, value any, path string) []any {
 		t.Fatalf("%s is not an array", path)
 	}
 	return items
+}
+
+func stripExamples(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(typed))
+		for key, item := range typed {
+			if key == "example" {
+				continue
+			}
+			result[key] = stripExamples(item)
+		}
+		return result
+	case []any:
+		result := make([]any, len(typed))
+		for index, item := range typed {
+			result[index] = stripExamples(item)
+		}
+		return result
+	default:
+		return value
+	}
 }
 
 func TestOnlySupportedPublicPathsAreExposed(t *testing.T) {
@@ -195,20 +218,25 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 			t.Fatalf("SessionDetail.required should include %s", field)
 		}
 	}
-	sessionDetailProperties := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")
-	if got := nestedMap(t, sessionDetailProperties["request"], "SessionDetail.properties.request")["$ref"]; got != "#/components/schemas/SessionDetailRequest" {
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["request"]; !reflect.DeepEqual(stripExamples(got), map[string]any{"$ref": "#/components/schemas/SessionDetailRequest"}) {
 		t.Fatalf("SessionDetail.request should reference SessionDetailRequest, got %#v", got)
 	}
-	if got := nestedMap(t, sessionDetailProperties["client_telemetry"], "SessionDetail.properties.client_telemetry")["$ref"]; got != "#/components/schemas/SessionClientTelemetry" {
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["client_telemetry"]; !reflect.DeepEqual(stripExamples(got), map[string]any{"$ref": "#/components/schemas/SessionClientTelemetry"}) {
 		t.Fatalf("SessionDetail.client_telemetry should reference SessionClientTelemetry, got %#v", got)
 	}
-	automationAnyOf := nestedSlice(t, nestedMap(t, sessionDetailProperties["automation"], "SessionDetail.properties.automation")["anyOf"], "SessionDetail.properties.automation.anyOf")
-	if nestedMap(t, automationAnyOf[0], "SessionDetail.properties.automation.anyOf.0")["$ref"] != "#/components/schemas/SessionAutomation" || nestedMap(t, automationAnyOf[1], "SessionDetail.properties.automation.anyOf.1")["type"] != "null" {
-		t.Fatalf("SessionDetail.automation should allow SessionAutomation or null, got %#v", automationAnyOf)
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["automation"]; !reflect.DeepEqual(stripExamples(got), map[string]any{
+		"anyOf": []any{
+			map[string]any{"$ref": "#/components/schemas/SessionAutomation"},
+			map[string]any{"type": "null"},
+		},
+	}) {
+		t.Fatalf("SessionDetail.automation should allow SessionAutomation or null, got %#v", got)
 	}
-	signalsFired := nestedMap(t, sessionDetailProperties["signals_fired"], "SessionDetail.properties.signals_fired")
-	if signalsFired["type"] != "array" || nestedMap(t, signalsFired["items"], "SessionDetail.properties.signals_fired.items")["$ref"] != "#/components/schemas/SessionSignalFired" {
-		t.Fatalf("SessionDetail.signals_fired should reference SessionSignalFired items, got %#v", signalsFired)
+	if got := nestedMap(t, nestedMap(t, schemas["SessionDetail"], "SessionDetail")["properties"], "SessionDetail.properties")["signals_fired"]; !reflect.DeepEqual(stripExamples(got), map[string]any{
+		"type":  "array",
+		"items": map[string]any{"$ref": "#/components/schemas/SessionSignalFired"},
+	}) {
+		t.Fatalf("SessionDetail.signals_fired should reference SessionSignalFired items, got %#v", got)
 	}
 	if got := nestedMap(t, nestedMap(t, schemas["SessionSignalFired"], "SessionSignalFired")["properties"], "SessionSignalFired.properties")["signal"]; nestedMap(t, got, "SessionSignalFired.properties.signal")["type"] != "string" {
 		t.Fatalf("SessionSignalFired.signal should be a string, got %#v", got)
