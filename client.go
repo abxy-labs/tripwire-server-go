@@ -68,6 +68,7 @@ type Client struct {
 	Fingerprints *FingerprintsService
 	Teams        *TeamsService
 	Gate         *GateService
+	Webhooks     *WebhooksService
 }
 
 func NewClient(options ...Option) (*Client, error) {
@@ -106,6 +107,7 @@ func NewClient(options ...Option) (*Client, error) {
 	client.Gate.Sessions = &GateSessionsService{client: client}
 	client.Gate.LoginSessions = &GateLoginSessionsService{client: client}
 	client.Gate.AgentTokens = &GateAgentTokensService{client: client}
+	client.Webhooks = &WebhooksService{client: client}
 	return client, nil
 }
 

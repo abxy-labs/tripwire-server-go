@@ -363,11 +363,11 @@ func TestGateNamespaceSupportsPublicBearerAndSecretFlows(t *testing.T) {
 		t.Fatalf("unexpected gate service detail %#v err=%v", item, err)
 	}
 	if item, err := client.Gate.Services.Create(context.Background(), CreateGateServiceParams{
-		ID:          "acme_prod",
-		Name:        "Acme Production",
-		Description: "Acme production signup flow",
-		Website:     "https://acme.example.com",
-		WebhookURL:  "https://api.acme.example.com/v1/gate/webhook",
+		ID:                "acme_prod",
+		Name:              "Acme Production",
+		Description:       "Acme production signup flow",
+		Website:           "https://acme.example.com",
+		WebhookEndpointID: "we_0123456789abcdef0123456789abcdef",
 	}); err != nil || item.ID != "acme_prod" {
 		t.Fatalf("unexpected created gate service %#v err=%v", item, err)
 	}
