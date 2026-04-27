@@ -218,6 +218,9 @@ func TestSessionsFingerprintsOrganizationsAndAPIKeys(t *testing.T) {
 	if err != nil || session.ID != "sid_0123456789abcdefghjkmnpqrs" {
 		t.Fatalf("unexpected session detail %#v err=%v", session, err)
 	}
+	if session.NativeRuntimeIntegrity != nil || session.NativeApp != nil || session.NativeCarrier != nil || session.NativeMotionPrint != nil || session.DeviceIdentity != nil || session.InstallID != nil {
+		t.Fatalf("expected null native session fields, got %#v", session)
+	}
 
 	fingerprints, err := client.Fingerprints.List(context.Background(), FingerprintListParams{})
 	if err != nil || len(fingerprints.Items) != 1 {
