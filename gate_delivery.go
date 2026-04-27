@@ -59,6 +59,12 @@ var (
 		"BUN_CONFIG_",
 		"GIT_CONFIG_",
 	}
+	webhookEventTypes = map[string]struct{}{
+		"session.fingerprint.calculated": {},
+		"session.result.persisted":       {},
+		"gate.session.approved":          {},
+		"webhook.test":                   {},
+	}
 )
 
 func DeriveGateAgentTokenEnvKey(serviceID string) (string, error) {
@@ -272,6 +278,9 @@ func ParseWebhookEvent(rawBody []byte) (*WebhookEventEnvelope, any, error) {
 	}
 	if envelope.Type == "" {
 		return nil, nil, errors.New("webhook event type is required")
+	}
+	if _, ok := webhookEventTypes[envelope.Type]; !ok {
+		return nil, nil, fmt.Errorf("unsupported webhook event type: %s", envelope.Type)
 	}
 	if envelope.Created == "" {
 		return nil, nil, errors.New("webhook event created timestamp is required")

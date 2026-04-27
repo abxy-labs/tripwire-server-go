@@ -415,24 +415,30 @@ type SessionSignalFired struct {
 }
 
 type SessionDetail struct {
-	Object                string                           `json:"object"`
-	ID                    string                           `json:"id"`
-	CreatedAt             *string                          `json:"created_at,omitempty"`
-	Decision              SessionDecision                  `json:"decision"`
-	Highlights            []SessionHighlight               `json:"highlights"`
-	Automation            *SessionAutomation               `json:"automation,omitempty"`
-	WebBotAuth            *SessionWebBotAuth               `json:"web_bot_auth,omitempty"`
-	Network               SessionNetwork                   `json:"network"`
-	RuntimeIntegrity      SessionRuntimeIntegrity          `json:"runtime_integrity"`
-	VisitorFingerprint    *SessionDetailVisitorFingerprint `json:"visitor_fingerprint,omitempty"`
-	ConnectionFingerprint SessionConnectionFingerprint     `json:"connection_fingerprint"`
-	PreviousDecisions     []SessionDecision                `json:"previous_decisions"`
-	Request               SessionDetailRequest             `json:"request"`
-	Browser               SessionBrowser                   `json:"browser"`
-	Device                SessionDevice                    `json:"device"`
-	AnalysisCoverage      SessionAnalysisCoverage          `json:"analysis_coverage"`
-	SignalsFired          []SessionSignalFired             `json:"signals_fired"`
-	ClientTelemetry       SessionClientTelemetry           `json:"client_telemetry"`
+	Object                 string                           `json:"object"`
+	ID                     string                           `json:"id"`
+	CreatedAt              *string                          `json:"created_at,omitempty"`
+	Decision               SessionDecision                  `json:"decision"`
+	Highlights             []SessionHighlight               `json:"highlights"`
+	Automation             *SessionAutomation               `json:"automation,omitempty"`
+	WebBotAuth             *SessionWebBotAuth               `json:"web_bot_auth,omitempty"`
+	Network                SessionNetwork                   `json:"network"`
+	RuntimeIntegrity       SessionRuntimeIntegrity          `json:"runtime_integrity"`
+	NativeRuntimeIntegrity map[string]any                   `json:"native_runtime_integrity,omitempty"`
+	NativeApp              map[string]any                   `json:"native_app,omitempty"`
+	NativeCarrier          map[string]any                   `json:"native_carrier,omitempty"`
+	NativeMotionPrint      map[string]any                   `json:"native_motion_print,omitempty"`
+	DeviceIdentity         map[string]any                   `json:"device_identity,omitempty"`
+	InstallID              *string                          `json:"install_id,omitempty"`
+	VisitorFingerprint     *SessionDetailVisitorFingerprint `json:"visitor_fingerprint,omitempty"`
+	ConnectionFingerprint  SessionConnectionFingerprint     `json:"connection_fingerprint"`
+	PreviousDecisions      []SessionDecision                `json:"previous_decisions"`
+	Request                SessionDetailRequest             `json:"request"`
+	Browser                SessionBrowser                   `json:"browser"`
+	Device                 SessionDevice                    `json:"device"`
+	AnalysisCoverage       SessionAnalysisCoverage          `json:"analysis_coverage"`
+	SignalsFired           []SessionSignalFired             `json:"signals_fired"`
+	ClientTelemetry        SessionClientTelemetry           `json:"client_telemetry"`
 }
 
 type VisitorFingerprintLifecycle struct {
