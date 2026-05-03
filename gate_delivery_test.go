@@ -3,7 +3,6 @@ package tripwire
 import (
 	"encoding/json"
 	"os"
-	"strings"
 	"testing"
 )
 
@@ -115,8 +114,16 @@ func TestGateWebhookAndEnvFixtures(t *testing.T) {
 	}) {
 		t.Fatal("expected expired signature fixture to fail")
 	}
-	if _, _, err := ParseWebhookEvent([]byte(`{"id":"wevt_0123456789abcdefghjkmnpqrs","object":"webhook_event","type":"unknown.event","created":"2026-04-27T00:00:00.000Z","data":{}}`)); err == nil || !strings.Contains(err.Error(), "unsupported webhook event type") {
-		t.Fatalf("expected unsupported webhook event type error, got %v", err)
+	envelope, parsedUnknownPayload, err := ParseWebhookEvent([]byte(`{"id":"wevt_0123456789abcdefghjkmnpqrs","object":"webhook_event","type":"unknown.event","created":"2026-04-27T00:00:00.000Z","data":{"future":true}}`))
+	if err != nil {
+		t.Fatalf("parse unknown webhook event type: %v", err)
+	}
+	if envelope.Type != "unknown.event" {
+		t.Fatalf("unknown webhook event type mismatch: got %s", envelope.Type)
+	}
+	unknownPayload, ok := parsedUnknownPayload.(map[string]any)
+	if !ok || unknownPayload["future"] != true {
+		t.Fatalf("unknown webhook event payload mismatch: got %#v", parsedUnknownPayload)
 	}
 
 	var envPolicyFixture struct {
