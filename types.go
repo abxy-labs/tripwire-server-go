@@ -114,11 +114,14 @@ type SessionWebBotAuth struct {
 }
 
 type SessionRuntimeIntegrity struct {
-	TamperingDetected         bool `json:"tampering_detected"`
-	DeveloperToolsDetected    bool `json:"developer_tools_detected"`
-	EmulationSuspected        bool `json:"emulation_suspected"`
-	VirtualizationSuspected   bool `json:"virtualization_suspected"`
-	PrivacyHardeningSuspected bool `json:"privacy_hardening_suspected"`
+	Tampering           string `json:"tampering"`
+	DeveloperTools      string `json:"developer_tools"`
+	Emulation           string `json:"emulation"`
+	Virtualization      string `json:"virtualization"`
+	PrivacyHardening    string `json:"privacy_hardening"`
+	IdentitySpoofing    string `json:"identity_spoofing"`
+	Replay              string `json:"replay"`
+	OutdatedEnvironment string `json:"outdated_environment"`
 }
 
 type VisitorFingerprintLink struct {
