@@ -91,21 +91,23 @@ type SessionHighlight struct {
 	Evidence   []SessionHighlightEvidence `json:"evidence,omitempty"`
 }
 
-type SessionAutomationFacet struct {
-	Value      string  `json:"value"`
-	Confidence float64 `json:"confidence"`
-	Relation   string  `json:"relation"`
+type SessionAttributionLabel struct {
+	Kind       string `json:"kind"`
+	Value      string `json:"value"`
+	Label      string `json:"label"`
+	Confidence int    `json:"confidence"`
 }
 
-type SessionAutomation struct {
-	Category         *string                           `json:"category,omitempty"`
-	Confidence       *float64                          `json:"confidence,omitempty"`
-	Provider         *string                           `json:"provider,omitempty"`
-	Product          *string                           `json:"product,omitempty"`
-	Framework        *string                           `json:"framework,omitempty"`
-	ConcealmentStyle *string                           `json:"concealment_style,omitempty"`
-	Organization     *string                           `json:"organization,omitempty"`
-	Facets           map[string]SessionAutomationFacet `json:"facets"`
+type SessionAttributionBehavior struct {
+	Channel    string `json:"channel"`
+	Value      string `json:"value"`
+	Label      string `json:"label"`
+	Confidence int    `json:"confidence"`
+}
+
+type SessionAttribution struct {
+	Labels    []SessionAttributionLabel    `json:"labels"`
+	Behaviors []SessionAttributionBehavior `json:"behaviors"`
 }
 
 type SessionWebBotAuth struct {
@@ -423,7 +425,7 @@ type SessionDetail struct {
 	CreatedAt              *string                          `json:"created_at,omitempty"`
 	Decision               SessionDecision                  `json:"decision"`
 	Highlights             []SessionHighlight               `json:"highlights"`
-	Automation             *SessionAutomation               `json:"automation,omitempty"`
+	Attribution            *SessionAttribution              `json:"attribution,omitempty"`
 	WebBotAuth             *SessionWebBotAuth               `json:"web_bot_auth,omitempty"`
 	Network                SessionNetwork                   `json:"network"`
 	RuntimeIntegrity       SessionRuntimeIntegrity          `json:"runtime_integrity"`
