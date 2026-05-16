@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 type ListResult[T any] struct {
 	Items      []T
@@ -540,7 +540,7 @@ type IssuedAPIKey struct {
 	RevealedKey string `json:"revealed_key"`
 }
 
-type VerifiedTripwireSignal struct {
+type VerifiedFoilSignal struct {
 	ID         string         `json:"id"`
 	Category   string         `json:"category"`
 	Confidence string         `json:"confidence"`
@@ -553,13 +553,13 @@ type Attribution struct {
 	Raw map[string]any `json:"raw,omitempty"`
 }
 
-type VerifiedTripwireToken struct {
+type VerifiedFoilToken struct {
 	Object             string                   `json:"object"`
 	SessionID          string                   `json:"session_id"`
 	Decision           Decision                 `json:"decision"`
 	Request            RequestContext           `json:"request"`
 	VisitorFingerprint *VisitorFingerprintLink  `json:"visitor_fingerprint,omitempty"`
-	Signals            []VerifiedTripwireSignal `json:"signals"`
+	Signals            []VerifiedFoilSignal `json:"signals"`
 	ScoreBreakdown     ScoreBreakdown           `json:"score_breakdown"`
 	Attribution        Attribution              `json:"attribution"`
 	Embed              map[string]any           `json:"embed,omitempty"`
@@ -568,7 +568,7 @@ type VerifiedTripwireToken struct {
 
 type VerificationResult struct {
 	OK    bool
-	Data  *VerifiedTripwireToken
+	Data  *VerifiedFoilToken
 	Error error
 }
 

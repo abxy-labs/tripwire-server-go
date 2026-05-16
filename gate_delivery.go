@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 import (
 	"crypto/aes"
@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	gateDeliveryHKDFInfo  = []byte("tripwire-gate-delivery:v1")
+	gateDeliveryHKDFInfo  = []byte("foil-gate-delivery:v1")
 	blockedGateEnvVarKeys = map[string]struct{}{
 		"BASH_ENV":              {},
 		"BROWSER":               {},
@@ -67,11 +67,14 @@ func DeriveGateAgentTokenEnvKey(serviceID string) (string, error) {
 	if normalized == "" {
 		return "", errors.New("service_id is required to derive a Gate agent token env key")
 	}
+	if normalized == "FOIL" {
+		return "FOIL" + GateAgentTokenEnvSuffix, nil
+	}
 	return normalized + GateAgentTokenEnvSuffix, nil
 }
 
 func IsGateManagedEnvVarKey(key string) bool {
-	return key == "TRIPWIRE_AGENT_TOKEN" || strings.HasSuffix(key, GateAgentTokenEnvSuffix)
+	return key == "FOIL_AGENT_TOKEN" || strings.HasSuffix(key, GateAgentTokenEnvSuffix)
 }
 
 func IsBlockedGateEnvVarKey(key string) bool {
@@ -207,8 +210,8 @@ func ValidateGateApprovedWebhookPayload(value GateApprovedWebhookPayload) (*Gate
 	if value.AccountName == "" {
 		return nil, errors.New("account_name is required")
 	}
-	if value.Tripwire.Verdict != "bot" && value.Tripwire.Verdict != "human" && value.Tripwire.Verdict != "inconclusive" {
-		return nil, errors.New("tripwire.verdict is invalid")
+	if value.Foil.Verdict != "bot" && value.Foil.Verdict != "human" && value.Foil.Verdict != "inconclusive" {
+		return nil, errors.New("foil.verdict is invalid")
 	}
 	delivery, err := ValidateGateDeliveryRequest(value.Delivery)
 	if err != nil {
@@ -306,7 +309,7 @@ func ParseWebhookEvent(rawBody []byte) (*WebhookEventEnvelope, any, error) {
 
 func VerifyAndParseWebhookEvent(input VerifyGateWebhookSignatureInput) (*WebhookEventEnvelope, any, error) {
 	if !VerifyGateWebhookSignature(input) {
-		return nil, nil, errors.New("invalid Tripwire webhook signature")
+		return nil, nil, errors.New("invalid Foil webhook signature")
 	}
 	return ParseWebhookEvent([]byte(input.RawBody))
 }

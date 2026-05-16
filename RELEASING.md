@@ -1,6 +1,6 @@
-# Releasing `tripwire`
+# Releasing `foil`
 
-This repository uses a manual `release.yml` workflow. Versions are independent from the other Tripwire server SDKs.
+This repository uses a manual `release.yml` workflow. Versions are independent from the other Foil server SDKs.
 
 ## Before the first real release
 

@@ -1,14 +1,14 @@
-# Tripwire Go Library
+# Foil Go Library
 
 ![Preview](https://img.shields.io/badge/status-preview-111827)
 ![Go 1.22+](https://img.shields.io/badge/go-1.22%2B-00ADD8?logo=go&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-The Tripwire Go library provides convenient access to the Tripwire API from Go services and applications. It includes a context-aware client for Sessions, visitor fingerprints, Organizations, Organization API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
+The Foil Go library provides convenient access to the Foil API from Go services and applications. It includes a context-aware client for Sessions, visitor fingerprints, Organizations, Organization API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
 
 The library also provides:
 
-- a fast configuration path using `TRIPWIRE_SECRET_KEY`
+- a fast configuration path using `FOIL_SECRET_KEY`
 - iterator-style helpers for cursor-based pagination
 - structured API errors and built-in sealed token verification
 - webhook endpoint management, test sends, and event delivery history
@@ -17,7 +17,7 @@ The library also provides:
 
 ## Documentation
 
-See the [Tripwire docs](https://tripwirejs.com/docs) and [API reference](https://tripwirejs.com/docs/api-reference/introduction).
+See the [Foil docs](https://usefoil.com/docs) and [API reference](https://usefoil.com/docs/api-reference/introduction).
 
 ## Installation
 
@@ -33,7 +33,7 @@ go get github.com/abxy-labs/foil-server-go
 
 ## Usage
 
-Use `TRIPWIRE_SECRET_KEY` or `WithSecretKey(...)` for core detect APIs. For public or bearer-auth Gate flows, the client can also be created without a secret key:
+Use `FOIL_SECRET_KEY` or `WithSecretKey(...)` for core detect APIs. For public or bearer-auth Gate flows, the client can also be created without a secret key:
 
 ```go
 package main
@@ -42,16 +42,16 @@ import (
   "context"
   "log"
 
-  tripwire "github.com/abxy-labs/foil-server-go"
+  foil "github.com/abxy-labs/foil-server-go"
 )
 
 func main() {
-  client, err := tripwire.NewClient(tripwire.WithSecretKey("sk_live_..."))
+  client, err := foil.NewClient(foil.WithSecretKey("sk_live_..."))
   if err != nil {
     log.Fatal(err)
   }
 
-  page, err := client.Sessions.List(context.Background(), tripwire.SessionListParams{
+  page, err := client.Sessions.List(context.Background(), foil.SessionListParams{
     Verdict: "bot",
     Limit:   25,
   })
@@ -71,7 +71,7 @@ func main() {
 ### Sealed token verification
 
 ```go
-result := tripwire.SafeVerifyTripwireToken(sealedToken, "sk_live_...")
+result := foil.SafeVerifyFoilToken(sealedToken, "sk_live_...")
 if !result.OK {
   log.Fatal(result.Error)
 }
@@ -82,7 +82,7 @@ log.Println(result.Data.Decision.Verdict, result.Data.Decision.RiskScore)
 ### Pagination
 
 ```go
-err := client.Sessions.Iter(context.Background(), tripwire.SessionListParams{Search: "signup"}, func(session tripwire.SessionSummary) error {
+err := client.Sessions.Iter(context.Background(), foil.SessionListParams{Search: "signup"}, func(session foil.SessionSummary) error {
   log.Println(session.ID, session.LatestDecision.Verdict)
   return nil
 })
@@ -110,7 +110,7 @@ if err != nil {
   log.Fatal(err)
 }
 
-updated, err := client.Organizations.Update(context.Background(), "org_0123456789abcdefghjkmnpqrs", tripwire.UpdateOrganizationParams{
+updated, err := client.Organizations.Update(context.Background(), "org_0123456789abcdefghjkmnpqrs", foil.UpdateOrganizationParams{
   Name: "New Name",
 })
 if err != nil {
@@ -126,7 +126,7 @@ _, _ = organization, updated
 created, err := client.Organizations.APIKeys.Create(
   context.Background(),
   "org_0123456789abcdefghjkmnpqrs",
-  tripwire.CreateAPIKeyParams{Name: "Production", Type: "secret", Environment: "live"},
+  foil.CreateAPIKeyParams{Name: "Production", Type: "secret", Environment: "live"},
 )
 if err != nil {
   log.Fatal(err)
@@ -141,16 +141,16 @@ if err != nil {
 ### Webhooks
 
 ```go
-endpoint, err := client.Webhooks.CreateEndpoint(context.Background(), "org_0123456789abcdefghjkmnpqrs", tripwire.CreateWebhookEndpointParams{
+endpoint, err := client.Webhooks.CreateEndpoint(context.Background(), "org_0123456789abcdefghjkmnpqrs", foil.CreateWebhookEndpointParams{
   Name:       "Production alerts",
-  URL:        "https://example.com/tripwire/webhook",
+  URL:        "https://example.com/foil/webhook",
   EventTypes: []string{"session.result.persisted", "gate.session.approved"},
 })
 if err != nil {
   log.Fatal(err)
 }
 
-events, err := client.Webhooks.ListEvents(context.Background(), "org_0123456789abcdefghjkmnpqrs", tripwire.EventListParams{
+events, err := client.Webhooks.ListEvents(context.Background(), "org_0123456789abcdefghjkmnpqrs", foil.EventListParams{
   EndpointID: endpoint.ID,
   Type:       "session.result.persisted",
 })
@@ -164,7 +164,7 @@ log.Println(events.Items[0].WebhookDeliveries[0].Status)
 ### Gate APIs
 
 ```go
-deliveryKeyPair, err := tripwire.CreateDeliveryKeyPair()
+deliveryKeyPair, err := foil.CreateDeliveryKeyPair()
 if err != nil {
   log.Fatal(err)
 }
@@ -174,8 +174,8 @@ if err != nil {
   log.Fatal(err)
 }
 
-session, err := client.Gate.Sessions.Create(context.Background(), tripwire.CreateGateSessionParams{
-  ServiceID:   "tripwire",
+session, err := client.Gate.Sessions.Create(context.Background(), foil.CreateGateSessionParams{
+  ServiceID:   "foil",
   AccountName: "my-project",
   Delivery:    deliveryKeyPair.Delivery,
 })
@@ -189,39 +189,39 @@ log.Println(registry[0].ID, session.ConsentURL)
 ### Gate delivery and webhook helpers
 
 ```go
-deliveryKeyPair, err := tripwire.CreateDeliveryKeyPair()
+deliveryKeyPair, err := foil.CreateDeliveryKeyPair()
 if err != nil {
   log.Fatal(err)
 }
 
-response, err := tripwire.CreateGateApprovedWebhookResponse(tripwire.GateDeliveryHelperInput{
+response, err := foil.CreateGateApprovedWebhookResponse(foil.GateDeliveryHelperInput{
   Delivery: deliveryKeyPair.Delivery,
   Outputs: map[string]string{
-    "TRIPWIRE_PUBLISHABLE_KEY": "pk_live_...",
-    "TRIPWIRE_SECRET_KEY":      "sk_live_...",
+    "FOIL_PUBLISHABLE_KEY": "pk_live_...",
+    "FOIL_SECRET_KEY":      "sk_live_...",
   },
 })
 if err != nil {
   log.Fatal(err)
 }
 
-payload, err := tripwire.DecryptGateDeliveryEnvelope(deliveryKeyPair.PrivateKey, response.EncryptedDelivery)
+payload, err := foil.DecryptGateDeliveryEnvelope(deliveryKeyPair.PrivateKey, response.EncryptedDelivery)
 if err != nil {
   log.Fatal(err)
 }
 
-log.Println(payload.Outputs["TRIPWIRE_SECRET_KEY"])
+log.Println(payload.Outputs["FOIL_SECRET_KEY"])
 ```
 
 ### Error handling
 
 ```go
-_, err := client.Sessions.List(context.Background(), tripwire.SessionListParams{Limit: 999})
-if apiErr, ok := err.(*tripwire.APIError); ok {
+_, err := client.Sessions.List(context.Background(), foil.SessionListParams{Limit: 999})
+if apiErr, ok := err.(*foil.APIError); ok {
   log.Println(apiErr.Status, apiErr.Code, apiErr.Message)
 }
 ```
 
 ## Support
 
-If you need help integrating Tripwire, start with [tripwirejs.com/docs](https://tripwirejs.com/docs).
+If you need help integrating Foil, start with [usefoil.com/docs](https://usefoil.com/docs).

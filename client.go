@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 import (
 	"bytes"
@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	defaultBaseURL  = "https://api.tripwirejs.com"
+	defaultBaseURL  = "https://api.usefoil.com"
 	defaultTimeout  = 30 * time.Second
-	sdkClientHeader = "tripwire-server-go/0.1.0"
+	sdkClientHeader = "foil-server-go/0.1.0"
 )
 
 type Option func(*clientConfig)
@@ -73,7 +73,7 @@ type Client struct {
 
 func NewClient(options ...Option) (*Client, error) {
 	cfg := &clientConfig{
-		secretKey: os.Getenv("TRIPWIRE_SECRET_KEY"),
+		secretKey: os.Getenv("FOIL_SECRET_KEY"),
 		baseURL:   defaultBaseURL,
 		timeout:   defaultTimeout,
 	}
@@ -168,7 +168,7 @@ func (c *Client) doJSONWithAuth(ctx context.Context, method string, path string,
 		return err
 	}
 	request.Header.Set("Accept", "application/json")
-	request.Header.Set("X-Tripwire-Client", sdkClientHeader)
+	request.Header.Set("X-Foil-Client", sdkClientHeader)
 	if c.userAgent != "" {
 		request.Header.Set("User-Agent", c.userAgent)
 	}
@@ -176,13 +176,13 @@ func (c *Client) doJSONWithAuth(ctx context.Context, method string, path string,
 	case authModeNone:
 	case authModeBearer:
 		if auth.Token == "" {
-			return &ConfigurationError{Message: "Missing bearer token for this Tripwire request."}
+			return &ConfigurationError{Message: "Missing bearer token for this Foil request."}
 		}
 		request.Header.Set("Authorization", "Bearer "+auth.Token)
 	default:
 		if c.secretKey == "" {
 			return &ConfigurationError{
-				Message: "Missing Tripwire secret key. Pass WithSecretKey or set TRIPWIRE_SECRET_KEY.",
+				Message: "Missing Foil secret key. Pass WithSecretKey or set FOIL_SECRET_KEY.",
 			}
 		}
 		request.Header.Set("Authorization", "Bearer "+c.secretKey)

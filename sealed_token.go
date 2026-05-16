@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 import (
 	"bytes"
@@ -22,11 +22,11 @@ func resolveSecret(secretKey string) (string, error) {
 	if secretKey != "" {
 		return secretKey, nil
 	}
-	if envSecret := os.Getenv("TRIPWIRE_SECRET_KEY"); envSecret != "" {
+	if envSecret := os.Getenv("FOIL_SECRET_KEY"); envSecret != "" {
 		return envSecret, nil
 	}
 	return "", &ConfigurationError{
-		Message: "Missing Tripwire secret key. Pass WithSecretKey or set TRIPWIRE_SECRET_KEY.",
+		Message: "Missing Foil secret key. Pass WithSecretKey or set FOIL_SECRET_KEY.",
 	}
 }
 
@@ -43,7 +43,7 @@ func deriveTokenKey(secretKeyOrHash string) []byte {
 	return sum[:]
 }
 
-func VerifyTripwireToken(sealedToken string, secretKey string) (*VerifiedTripwireToken, error) {
+func VerifyFoilToken(sealedToken string, secretKey string) (*VerifiedFoilToken, error) {
 	resolvedSecret, err := resolveSecret(secretKey)
 	if err != nil {
 		return nil, err
@@ -51,13 +51,13 @@ func VerifyTripwireToken(sealedToken string, secretKey string) (*VerifiedTripwir
 
 	raw, err := base64.StdEncoding.DecodeString(sealedToken)
 	if err != nil {
-		return nil, &TokenVerificationError{Message: "Failed to verify Tripwire token.", Err: err}
+		return nil, &TokenVerificationError{Message: "Failed to verify Foil token.", Err: err}
 	}
 	if len(raw) < 29 {
-		return nil, &TokenVerificationError{Message: "Tripwire token is too short."}
+		return nil, &TokenVerificationError{Message: "Foil token is too short."}
 	}
 	if raw[0] != tokenVersion {
-		return nil, &TokenVerificationError{Message: "Unsupported Tripwire token version."}
+		return nil, &TokenVerificationError{Message: "Unsupported Foil token version."}
 	}
 
 	nonce := raw[1:13]
@@ -66,44 +66,44 @@ func VerifyTripwireToken(sealedToken string, secretKey string) (*VerifiedTripwir
 
 	block, err := aes.NewCipher(deriveTokenKey(resolvedSecret))
 	if err != nil {
-		return nil, &TokenVerificationError{Message: "Failed to verify Tripwire token.", Err: err}
+		return nil, &TokenVerificationError{Message: "Failed to verify Foil token.", Err: err}
 	}
 	aead, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, &TokenVerificationError{Message: "Failed to verify Tripwire token.", Err: err}
+		return nil, &TokenVerificationError{Message: "Failed to verify Foil token.", Err: err}
 	}
 
 	compressed, err := aead.Open(nil, nonce, append(ciphertext, tag...), nil)
 	if err != nil {
-		return nil, &TokenVerificationError{Message: "Failed to verify Tripwire token.", Err: err}
+		return nil, &TokenVerificationError{Message: "Failed to verify Foil token.", Err: err}
 	}
 
 	reader, err := zlib.NewReader(bytes.NewReader(compressed))
 	if err != nil {
-		return nil, &TokenVerificationError{Message: "Failed to verify Tripwire token.", Err: err}
+		return nil, &TokenVerificationError{Message: "Failed to verify Foil token.", Err: err}
 	}
 	defer reader.Close()
 
 	payloadBytes, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, &TokenVerificationError{Message: "Failed to verify Tripwire token.", Err: err}
+		return nil, &TokenVerificationError{Message: "Failed to verify Foil token.", Err: err}
 	}
 
 	var payload map[string]any
 	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
-		return nil, &TokenVerificationError{Message: "Failed to verify Tripwire token.", Err: err}
+		return nil, &TokenVerificationError{Message: "Failed to verify Foil token.", Err: err}
 	}
 
-	verified := &VerifiedTripwireToken{}
+	verified := &VerifiedFoilToken{}
 	if err := json.Unmarshal(payloadBytes, verified); err != nil {
-		return nil, &TokenVerificationError{Message: "Failed to verify Tripwire token.", Err: err}
+		return nil, &TokenVerificationError{Message: "Failed to verify Foil token.", Err: err}
 	}
 	verified.Raw = payload
 	return verified, nil
 }
 
-func SafeVerifyTripwireToken(sealedToken string, secretKey string) VerificationResult {
-	verified, err := VerifyTripwireToken(sealedToken, secretKey)
+func SafeVerifyFoilToken(sealedToken string, secretKey string) VerificationResult {
+	verified, err := VerifyFoilToken(sealedToken, secretKey)
 	if err != nil {
 		return VerificationResult{OK: false, Error: err}
 	}
