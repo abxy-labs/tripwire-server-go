@@ -76,7 +76,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p artifacts
-          git archive --format=tar.gz --output="artifacts/tripwire-server-go-${VERSION}-source.tar.gz" HEAD
+          git archive --format=tar.gz --output="artifacts/foil-server-go-${VERSION}-source.tar.gz" HEAD
 
       - uses: actions/upload-artifact@v7
         with:

@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 import "crypto/ecdh"
 
@@ -142,7 +142,7 @@ type GateDeliveryHelperInput struct {
 	Outputs  map[string]string   `json:"outputs"`
 }
 
-type GateApprovedWebhookTripwire struct {
+type GateApprovedWebhookFoil struct {
 	Verdict string   `json:"verdict"`
 	Score   *float64 `json:"score"`
 }
@@ -153,7 +153,7 @@ type GateApprovedWebhookPayload struct {
 	GateAccountID string                      `json:"gate_account_id"`
 	AccountName   string                      `json:"account_name"`
 	Metadata      map[string]any              `json:"metadata"`
-	Tripwire      GateApprovedWebhookTripwire `json:"tripwire"`
+	Foil      GateApprovedWebhookFoil `json:"foil"`
 	Delivery      GateDeliveryRequest         `json:"delivery"`
 }
 

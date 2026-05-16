@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 import (
 	"encoding/json"
@@ -194,8 +194,8 @@ func TestCriticalSchemaConstraintsAreTightened(t *testing.T) {
 		t.Fatalf("ApiKey.status should reference ApiKeyStatus")
 	}
 	publicErrorCode := nestedMap(t, nestedMap(t, schemas["PublicError"], "PublicError")["properties"], "PublicError.properties")["code"]
-	if nestedMap(t, publicErrorCode, "PublicError.properties.code")["x-tripwire-known-values-ref"] != "#/components/schemas/KnownPublicErrorCode" {
-		t.Fatalf("PublicError.code should expose x-tripwire-known-values-ref")
+	if nestedMap(t, publicErrorCode, "PublicError.properties.code")["x-foil-known-values-ref"] != "#/components/schemas/KnownPublicErrorCode" {
+		t.Fatalf("PublicError.code should expose x-foil-known-values-ref")
 	}
 	if _, ok := schemas["CollectBatchResponse"]; ok {
 		t.Fatalf("CollectBatchResponse should be pruned from the public SDK spec")

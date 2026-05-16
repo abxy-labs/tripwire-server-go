@@ -1,11 +1,11 @@
-package tripwire
+package foil
 
 import (
 	"os"
 	"testing"
 )
 
-func TestVerifyTripwireTokenFixture(t *testing.T) {
+func TestVerifyFoilTokenFixture(t *testing.T) {
 	fixture := loadFixture[struct {
 		Token      string         `json:"token"`
 		SecretKey  string         `json:"secretKey"`
@@ -13,7 +13,7 @@ func TestVerifyTripwireTokenFixture(t *testing.T) {
 		Payload    map[string]any `json:"payload"`
 	}](t, "sealed-token/vector.v1.json")
 
-	verified, err := VerifyTripwireToken(fixture.Token, fixture.SecretKey)
+	verified, err := VerifyFoilToken(fixture.Token, fixture.SecretKey)
 	if err != nil {
 		t.Fatalf("verify token with secret key: %v", err)
 	}
@@ -21,7 +21,7 @@ func TestVerifyTripwireTokenFixture(t *testing.T) {
 		t.Fatalf("unexpected session id %#v", verified.SessionID)
 	}
 
-	verified, err = VerifyTripwireToken(fixture.Token, fixture.SecretHash)
+	verified, err = VerifyFoilToken(fixture.Token, fixture.SecretHash)
 	if err != nil {
 		t.Fatalf("verify token with secret hash: %v", err)
 	}
@@ -31,18 +31,18 @@ func TestVerifyTripwireTokenFixture(t *testing.T) {
 	}
 }
 
-func TestSafeVerifyTripwireTokenInvalidFixture(t *testing.T) {
+func TestSafeVerifyFoilTokenInvalidFixture(t *testing.T) {
 	fixture := loadFixture[struct {
 		Token string `json:"token"`
 	}](t, "sealed-token/invalid.json")
 
-	result := SafeVerifyTripwireToken(fixture.Token, "sk_live_fixture_secret")
+	result := SafeVerifyFoilToken(fixture.Token, "sk_live_fixture_secret")
 	if result.OK || result.Error == nil {
 		t.Fatal("expected invalid token failure result")
 	}
 }
 
-func TestVerifyTripwireTokenMissingSecret(t *testing.T) {
+func TestVerifyFoilTokenMissingSecret(t *testing.T) {
 	fixture := loadFixture[struct {
 		Token string `json:"token"`
 	}](t, "sealed-token/vector.v1.json")
@@ -51,7 +51,7 @@ func TestVerifyTripwireTokenMissingSecret(t *testing.T) {
 	defer os.Setenv("FOIL_SECRET_KEY", original)
 	_ = os.Unsetenv("FOIL_SECRET_KEY")
 
-	if _, err := VerifyTripwireToken(fixture.Token, ""); err == nil {
+	if _, err := VerifyFoilToken(fixture.Token, ""); err == nil {
 		t.Fatal("expected missing secret error")
 	}
 }

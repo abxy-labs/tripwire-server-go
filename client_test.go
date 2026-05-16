@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 import (
 	"context"
@@ -91,10 +91,10 @@ func TestClientAppliesBaseURLTimeoutAndHeaders(t *testing.T) {
 		if got := request.Header.Get("Authorization"); got != "Bearer sk_live_test" {
 			t.Fatalf("unexpected auth header %s", got)
 		}
-		if got := request.Header.Get("X-Tripwire-Client"); got != "tripwire-server-go/0.1.0" {
+		if got := request.Header.Get("X-Foil-Client"); got != "foil-server-go/0.1.0" {
 			t.Fatalf("unexpected client header %s", got)
 		}
-		if got := request.Header.Get("User-Agent"); got != "custom-tripwire-go" {
+		if got := request.Header.Get("User-Agent"); got != "custom-foil-go" {
 			t.Fatalf("unexpected user agent %s", got)
 		}
 		writeJSON(t, writer, http.StatusOK, fixture)
@@ -106,7 +106,7 @@ func TestClientAppliesBaseURLTimeoutAndHeaders(t *testing.T) {
 		WithBaseURL(server.URL),
 		WithHTTPClient(server.Client()),
 		WithTimeout(5*time.Second),
-		WithUserAgent("custom-tripwire-go"),
+		WithUserAgent("custom-foil-go"),
 	)
 	if err != nil {
 		t.Fatalf("new client: %v", err)
@@ -365,7 +365,7 @@ func TestGateNamespaceSupportsPublicBearerAndSecretFlows(t *testing.T) {
 				t.Fatalf("expected no auth header for registry list, got %q", auth)
 			}
 			writeJSON(t, writer, http.StatusOK, registryList)
-		case request.URL.Path == "/v1/gate/registry/tripwire":
+		case request.URL.Path == "/v1/gate/registry/foil":
 			if auth != "" {
 				t.Fatalf("expected no auth header for registry get, got %q", auth)
 			}
@@ -375,7 +375,7 @@ func TestGateNamespaceSupportsPublicBearerAndSecretFlows(t *testing.T) {
 				t.Fatalf("unexpected auth header %q", auth)
 			}
 			writeJSON(t, writer, http.StatusOK, servicesList)
-		case request.URL.Path == "/v1/gate/services/tripwire" && request.Method == http.MethodGet:
+		case request.URL.Path == "/v1/gate/services/foil" && request.Method == http.MethodGet:
 			if auth != "Bearer sk_live_test" {
 				t.Fatalf("unexpected auth header %q", auth)
 			}
@@ -441,16 +441,16 @@ func TestGateNamespaceSupportsPublicBearerAndSecretFlows(t *testing.T) {
 		t.Fatalf("new client: %v", err)
 	}
 
-	if items, err := client.Gate.Registry.List(context.Background()); err != nil || len(items) != 1 || items[0].ID != "tripwire" {
+	if items, err := client.Gate.Registry.List(context.Background()); err != nil || len(items) != 1 || items[0].ID != "foil" {
 		t.Fatalf("unexpected gate registry list %#v err=%v", items, err)
 	}
-	if item, err := client.Gate.Registry.Get(context.Background(), "tripwire"); err != nil || item.ID != "tripwire" {
+	if item, err := client.Gate.Registry.Get(context.Background(), "foil"); err != nil || item.ID != "foil" {
 		t.Fatalf("unexpected gate registry detail %#v err=%v", item, err)
 	}
 	if items, err := client.Gate.Services.List(context.Background()); err != nil || len(items) != 1 || items[0].ID != "acme_prod" {
 		t.Fatalf("unexpected gate services list %#v err=%v", items, err)
 	}
-	if item, err := client.Gate.Services.Get(context.Background(), "tripwire"); err != nil || item.ID != "acme_prod" {
+	if item, err := client.Gate.Services.Get(context.Background(), "foil"); err != nil || item.ID != "acme_prod" {
 		t.Fatalf("unexpected gate service detail %#v err=%v", item, err)
 	}
 	if item, err := client.Gate.Services.Create(context.Background(), CreateGateServiceParams{
@@ -470,7 +470,7 @@ func TestGateNamespaceSupportsPublicBearerAndSecretFlows(t *testing.T) {
 		t.Fatalf("unexpected disabled gate service %#v err=%v", item, err)
 	}
 	if item, err := client.Gate.Sessions.Create(context.Background(), CreateGateSessionParams{
-		ServiceID:   "tripwire",
+		ServiceID:   "foil",
 		AccountName: "my-project",
 		Delivery: GateDeliveryRequest{
 			Version:   1,
@@ -491,7 +491,7 @@ func TestGateNamespaceSupportsPublicBearerAndSecretFlows(t *testing.T) {
 		t.Fatalf("unexpected gate ack %#v err=%v", item, err)
 	}
 	if item, err := client.Gate.LoginSessions.Create(context.Background(), CreateGateLoginSessionParams{
-		ServiceID:  "tripwire",
+		ServiceID:  "foil",
 		AgentToken: "agt_0123456789abcdefghjkmnpqrs",
 	}); err != nil || item.ID == "" {
 		t.Fatalf("unexpected gate login session %#v err=%v", item, err)

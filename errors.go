@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 import "fmt"
 
@@ -51,6 +51,6 @@ func wrapInvalidJSONError(err error) *APIError {
 	return &APIError{
 		Status:  500,
 		Code:    "response.invalid_json",
-		Message: fmt.Sprintf("Tripwire API returned invalid JSON: %v", err),
+		Message: fmt.Sprintf("Foil API returned invalid JSON: %v", err),
 	}
 }

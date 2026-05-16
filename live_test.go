@@ -1,4 +1,4 @@
-package tripwire
+package foil
 
 import (
 	"context"
@@ -111,7 +111,7 @@ func TestLiveSmoke(t *testing.T) {
 		Payload   map[string]any `json:"payload"`
 	}](t, "sealed-token/vector.v1.json")
 
-	result := SafeVerifyTripwireToken(fixture.Token, fixture.SecretKey)
+	result := SafeVerifyFoilToken(fixture.Token, fixture.SecretKey)
 	if !result.OK || result.Data == nil {
 		t.Fatalf("verify sealed token fixture: %v", result.Error)
 	}
