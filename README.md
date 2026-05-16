@@ -24,7 +24,7 @@ See the [Tripwire docs](https://tripwirejs.com/docs) and [API reference](https:/
 You don't need this source code unless you want to modify the module. If you just want to use it, run:
 
 ```bash
-go get github.com/abxy-labs/tripwire-server-go
+go get github.com/abxy-labs/foil-server-go
 ```
 
 ## Requirements
@@ -42,7 +42,7 @@ import (
   "context"
   "log"
 
-  tripwire "github.com/abxy-labs/tripwire-server-go"
+  tripwire "github.com/abxy-labs/foil-server-go"
 )
 
 func main() {

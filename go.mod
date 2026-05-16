@@ -1,3 +1,3 @@
-module github.com/abxy-labs/tripwire-server-go
+module github.com/abxy-labs/foil-server-go
 
 go 1.22
