@@ -67,11 +67,14 @@ func DeriveGateAgentTokenEnvKey(serviceID string) (string, error) {
 	if normalized == "" {
 		return "", errors.New("service_id is required to derive a Gate agent token env key")
 	}
+	if normalized == "TRIPWIRE" || normalized == "FOIL" {
+		return "FOIL" + GateAgentTokenEnvSuffix, nil
+	}
 	return normalized + GateAgentTokenEnvSuffix, nil
 }
 
 func IsGateManagedEnvVarKey(key string) bool {
-	return key == "TRIPWIRE_AGENT_TOKEN" || strings.HasSuffix(key, GateAgentTokenEnvSuffix)
+	return key == "FOIL_AGENT_TOKEN" || strings.HasSuffix(key, GateAgentTokenEnvSuffix)
 }
 
 func IsBlockedGateEnvVarKey(key string) bool {

@@ -171,8 +171,8 @@ func TestCreateGateApprovedWebhookResponseRoundtrip(t *testing.T) {
 	response, err := CreateGateApprovedWebhookResponse(GateDeliveryHelperInput{
 		Delivery: keyPair.Delivery,
 		Outputs: map[string]string{
-			"TRIPWIRE_PUBLISHABLE_KEY": "pk_live_bundle",
-			"TRIPWIRE_SECRET_KEY":      "sk_live_bundle",
+			"FOIL_PUBLISHABLE_KEY": "pk_live_bundle",
+			"FOIL_SECRET_KEY":      "sk_live_bundle",
 		},
 	})
 	if err != nil {
@@ -182,7 +182,7 @@ func TestCreateGateApprovedWebhookResponseRoundtrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("decrypt created response: %v", err)
 	}
-	if got, want := toJSON(t, payload.Outputs), `{"TRIPWIRE_PUBLISHABLE_KEY":"pk_live_bundle","TRIPWIRE_SECRET_KEY":"sk_live_bundle"}`; got != want {
+	if got, want := toJSON(t, payload.Outputs), `{"FOIL_PUBLISHABLE_KEY":"pk_live_bundle","FOIL_SECRET_KEY":"sk_live_bundle"}`; got != want {
 		t.Fatalf("response outputs mismatch\n got: %s\nwant: %s", got, want)
 	}
 }

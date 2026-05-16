@@ -47,9 +47,9 @@ func TestVerifyTripwireTokenMissingSecret(t *testing.T) {
 		Token string `json:"token"`
 	}](t, "sealed-token/vector.v1.json")
 
-	original := os.Getenv("TRIPWIRE_SECRET_KEY")
-	defer os.Setenv("TRIPWIRE_SECRET_KEY", original)
-	_ = os.Unsetenv("TRIPWIRE_SECRET_KEY")
+	original := os.Getenv("FOIL_SECRET_KEY")
+	defer os.Setenv("FOIL_SECRET_KEY", original)
+	_ = os.Unsetenv("FOIL_SECRET_KEY")
 
 	if _, err := VerifyTripwireToken(fixture.Token, ""); err == nil {
 		t.Fatal("expected missing secret error")

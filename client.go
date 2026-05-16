@@ -73,7 +73,7 @@ type Client struct {
 
 func NewClient(options ...Option) (*Client, error) {
 	cfg := &clientConfig{
-		secretKey: os.Getenv("TRIPWIRE_SECRET_KEY"),
+		secretKey: os.Getenv("FOIL_SECRET_KEY"),
 		baseURL:   defaultBaseURL,
 		timeout:   defaultTimeout,
 	}
@@ -182,7 +182,7 @@ func (c *Client) doJSONWithAuth(ctx context.Context, method string, path string,
 	default:
 		if c.secretKey == "" {
 			return &ConfigurationError{
-				Message: "Missing Tripwire secret key. Pass WithSecretKey or set TRIPWIRE_SECRET_KEY.",
+				Message: "Missing Tripwire secret key. Pass WithSecretKey or set FOIL_SECRET_KEY.",
 			}
 		}
 		request.Header.Set("Authorization", "Bearer "+c.secretKey)

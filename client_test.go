@@ -26,9 +26,9 @@ func ptr[T any](value T) *T {
 }
 
 func TestClientUsesEnvSecretFallback(t *testing.T) {
-	original := os.Getenv("TRIPWIRE_SECRET_KEY")
-	defer os.Setenv("TRIPWIRE_SECRET_KEY", original)
-	if err := os.Setenv("TRIPWIRE_SECRET_KEY", "sk_env_default"); err != nil {
+	original := os.Getenv("FOIL_SECRET_KEY")
+	defer os.Setenv("FOIL_SECRET_KEY", original)
+	if err := os.Setenv("FOIL_SECRET_KEY", "sk_env_default"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -53,9 +53,9 @@ func TestClientUsesEnvSecretFallback(t *testing.T) {
 }
 
 func TestClientMissingSecretFails(t *testing.T) {
-	original := os.Getenv("TRIPWIRE_SECRET_KEY")
-	defer os.Setenv("TRIPWIRE_SECRET_KEY", original)
-	_ = os.Unsetenv("TRIPWIRE_SECRET_KEY")
+	original := os.Getenv("FOIL_SECRET_KEY")
+	defer os.Setenv("FOIL_SECRET_KEY", original)
+	_ = os.Unsetenv("FOIL_SECRET_KEY")
 
 	client, err := NewClient()
 	if err != nil {
@@ -68,9 +68,9 @@ func TestClientMissingSecretFails(t *testing.T) {
 }
 
 func TestSecretEndpointsFailAtRequestTimeWhenNoSecretIsConfigured(t *testing.T) {
-	original := os.Getenv("TRIPWIRE_SECRET_KEY")
-	defer os.Setenv("TRIPWIRE_SECRET_KEY", original)
-	_ = os.Unsetenv("TRIPWIRE_SECRET_KEY")
+	original := os.Getenv("FOIL_SECRET_KEY")
+	defer os.Setenv("FOIL_SECRET_KEY", original)
+	_ = os.Unsetenv("FOIL_SECRET_KEY")
 
 	client, err := NewClient()
 	if err != nil {

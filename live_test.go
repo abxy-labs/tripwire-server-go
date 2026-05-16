@@ -9,21 +9,21 @@ import (
 )
 
 func TestLiveSmoke(t *testing.T) {
-	if os.Getenv("TRIPWIRE_LIVE_SMOKE") != "1" {
-		t.Skip("set TRIPWIRE_LIVE_SMOKE=1 to run live smoke tests")
+	if os.Getenv("FOIL_LIVE_SMOKE") != "1" {
+		t.Skip("set FOIL_LIVE_SMOKE=1 to run live smoke tests")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	client, err := NewClient(
-		WithSecretKey(requireEnv(t, "TRIPWIRE_SMOKE_SECRET_KEY")),
-		WithBaseURL(envOrDefault("TRIPWIRE_SMOKE_BASE_URL", defaultBaseURL)),
+		WithSecretKey(requireEnv(t, "FOIL_SMOKE_SECRET_KEY")),
+		WithBaseURL(envOrDefault("FOIL_SMOKE_BASE_URL", defaultBaseURL)),
 	)
 	if err != nil {
 		t.Fatalf("new client: %v", err)
 	}
-	organizationID := requireEnv(t, "TRIPWIRE_SMOKE_ORGANIZATION_ID")
+	organizationID := requireEnv(t, "FOIL_SMOKE_ORGANIZATION_ID")
 
 	var createdKeyID string
 	var rotatedKeyID string

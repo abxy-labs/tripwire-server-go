@@ -8,7 +8,7 @@ The Tripwire Go library provides convenient access to the Tripwire API from Go s
 
 The library also provides:
 
-- a fast configuration path using `TRIPWIRE_SECRET_KEY`
+- a fast configuration path using `FOIL_SECRET_KEY`
 - iterator-style helpers for cursor-based pagination
 - structured API errors and built-in sealed token verification
 - webhook endpoint management, test sends, and event delivery history
@@ -33,7 +33,7 @@ go get github.com/abxy-labs/foil-server-go
 
 ## Usage
 
-Use `TRIPWIRE_SECRET_KEY` or `WithSecretKey(...)` for core detect APIs. For public or bearer-auth Gate flows, the client can also be created without a secret key:
+Use `FOIL_SECRET_KEY` or `WithSecretKey(...)` for core detect APIs. For public or bearer-auth Gate flows, the client can also be created without a secret key:
 
 ```go
 package main
@@ -197,8 +197,8 @@ if err != nil {
 response, err := tripwire.CreateGateApprovedWebhookResponse(tripwire.GateDeliveryHelperInput{
   Delivery: deliveryKeyPair.Delivery,
   Outputs: map[string]string{
-    "TRIPWIRE_PUBLISHABLE_KEY": "pk_live_...",
-    "TRIPWIRE_SECRET_KEY":      "sk_live_...",
+    "FOIL_PUBLISHABLE_KEY": "pk_live_...",
+    "FOIL_SECRET_KEY":      "sk_live_...",
   },
 })
 if err != nil {
@@ -210,7 +210,7 @@ if err != nil {
   log.Fatal(err)
 }
 
-log.Println(payload.Outputs["TRIPWIRE_SECRET_KEY"])
+log.Println(payload.Outputs["FOIL_SECRET_KEY"])
 ```
 
 ### Error handling

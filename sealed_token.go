@@ -22,11 +22,11 @@ func resolveSecret(secretKey string) (string, error) {
 	if secretKey != "" {
 		return secretKey, nil
 	}
-	if envSecret := os.Getenv("TRIPWIRE_SECRET_KEY"); envSecret != "" {
+	if envSecret := os.Getenv("FOIL_SECRET_KEY"); envSecret != "" {
 		return envSecret, nil
 	}
 	return "", &ConfigurationError{
-		Message: "Missing Tripwire secret key. Pass WithSecretKey or set TRIPWIRE_SECRET_KEY.",
+		Message: "Missing Tripwire secret key. Pass WithSecretKey or set FOIL_SECRET_KEY.",
 	}
 }
 
